@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { applyLiveEpg } from '@/components/epg/applyLiveEpg';
 import { useCatalogRefreshStore } from '@/hooks/useCatalogRefreshStore';
@@ -12,6 +12,7 @@ import { useI18n } from '@/components/i18n/I18nProvider';
 import type { HomeContentItem } from '@/components/home/types';
 
 const SECTION_ITEM_LIMIT = 5;
+const MAX_SECTION_COUNT = 8;
 
 type LiveSection = {
   id: string;
@@ -28,6 +29,7 @@ export const useLiveSections = (enabled: boolean) => {
   const { t } = useI18n();
   const activeProfileId = usePortalStore((store) => store.activeProfileId);
   const catalogVersion = useCatalogRefreshStore((store) => store.version);
+  const lastLoadedKeyRef = useRef<string | null>(null);
   const [state, setState] = useState<LiveSectionsState>({
     status: 'loading',
     sections: [],
@@ -40,14 +42,19 @@ export const useLiveSections = (enabled: boolean) => {
     if (!activeProfileId) {
       return;
     }
+    const loadKey = `${activeProfileId}:${catalogVersion}`;
+    if (lastLoadedKeyRef.current === loadKey) {
+      return;
+    }
     let isCancelled = false;
     setState((prev) => ({ ...prev, status: 'loading' }));
 
     const run = async () => {
       try {
         const categories: LiveCategory[] = await getLiveCategories(activeProfileId);
+        const limitedCategories = categories.slice(0, MAX_SECTION_COUNT);
         const rawSections = await Promise.all(
-          categories.map(async (category) => {
+          limitedCategories.map(async (category) => {
             const items = await getLivePage(
               activeProfileId,
               SECTION_ITEM_LIMIT,
@@ -80,6 +87,7 @@ export const useLiveSections = (enabled: boolean) => {
               ? [{ id: 'all', name: t('live.categories.all'), items }]
               : [],
           });
+          lastLoadedKeyRef.current = loadKey;
           if (items.length > 0) {
             try {
               const withEpg = await applyLiveEpg(activeProfileId, items);
@@ -104,6 +112,7 @@ export const useLiveSections = (enabled: boolean) => {
           status: 'ready',
           sections,
         });
+        lastLoadedKeyRef.current = loadKey;
 
         const flatItems = sections.flatMap((section) => section.items);
         if (flatItems.length === 0) {
@@ -137,7 +146,7 @@ export const useLiveSections = (enabled: boolean) => {
     return () => {
       isCancelled = true;
     };
-  }, [activeProfileId, catalogVersion, enabled]);
+  }, [activeProfileId, catalogVersion, enabled, t]);
 
   return state;
 };

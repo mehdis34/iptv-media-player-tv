@@ -265,6 +265,36 @@
       "seasons": "{{count}} seasons"
     }
   },
+  "player": {
+    "status": {
+      "loading": "Preparing stream..."
+    },
+    "errors": {
+      "noProfile": "No active profile found.",
+      "invalidParams": "Invalid stream.",
+      "playback": "Playback failed."
+    },
+    "labels": {
+      "live": "Live",
+      "track": "Track"
+    },
+    "actions": {
+      "play": "Play",
+      "pause": "Pause",
+      "jumpBack": "Back 10s",
+      "jumpForward": "Forward 10s",
+      "jumpLive": "Jump to live",
+      "tracks": "Audio & subtitles",
+      "audio": "Audio",
+      "subtitles": "Subtitles",
+      "quality": "Quality",
+      "episodes": "Episodes",
+      "seasons": "Seasons",
+      "retry": "Retry",
+      "favorite": "Favorite",
+      "unfavorite": "Unfavorite"
+    }
+  },
   "favorites": {
     "actions": {
       "remove": "Remove from favorites",

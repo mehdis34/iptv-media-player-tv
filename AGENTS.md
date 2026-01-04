@@ -132,7 +132,7 @@ Inspired by **myCANAL UI style**.
 - Virtualized lists/grids
 - No heavy logic in `onFocus`
 
-❌ State updates on focus  
+❌ State updates on focus (sauf si je le demande explicitement)
 ❌ Fetch calls triggered by focus  
 
 ### TV Focus System (MANDATORY)

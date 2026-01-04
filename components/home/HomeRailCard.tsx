@@ -141,7 +141,7 @@ export function HomeRailCard({
         </View>
       </TVFocusPressable>
       <View className="gap-1 h-12">
-        <Text className="text-white text-sm font-semibold text-left" numberOfLines={2}>
+        <Text className="text-white text-sm font-semibold text-left" numberOfLines={1}>
           {item.title}
         </Text>
         {showEpgMeta ? (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { applyLiveEpg } from '@/components/epg/applyLiveEpg';
 import type { HomeContentItem } from '@/components/home/types';
@@ -24,6 +24,7 @@ type LiveState = {
 export const useLiveCatalog = () => {
   const activeProfileId = usePortalStore((store) => store.activeProfileId);
   const catalogVersion = useCatalogRefreshStore((store) => store.version);
+  const categoryIdRef = useRef<string | null>(null);
   const [state, setState] = useState<LiveState>({
     status: 'loading',
     items: [],
@@ -32,6 +33,10 @@ export const useLiveCatalog = () => {
     hasMore: true,
     isLoadingMore: false,
   });
+
+  useEffect(() => {
+    categoryIdRef.current = state.categoryId;
+  }, [state.categoryId]);
 
   const loadPage = useCallback(
     async (
@@ -48,11 +53,12 @@ export const useLiveCatalog = () => {
         isLoadingMore: !reset,
       }));
       const offset = reset ? 0 : currentItems.length;
+      const resolvedCategoryId = override?.categoryId ?? categoryIdRef.current;
       const items = await getLivePage(
         activeProfileId,
         PAGE_SIZE,
         offset,
-        override?.categoryId ?? state.categoryId,
+        resolvedCategoryId,
         { includeMissingIcons: true },
       );
       setState((prev) => {
@@ -66,17 +72,26 @@ export const useLiveCatalog = () => {
         };
       });
       try {
+        if (items.length === 0) {
+          return;
+        }
         const withEpg = await applyLiveEpg(activeProfileId, items);
+        const byId = new Map(withEpg.map((item) => [item.id, item]));
         setState((prev) => ({
           ...prev,
           status: 'ready',
-          items: reset ? withEpg : [...prev.items, ...withEpg],
+          items: reset
+            ? withEpg
+            : prev.items.map((item) => {
+                const replacement = byId.get(item.id);
+                return replacement ?? item;
+              }),
         }));
       } catch {
         // Keep raw items if EPG resolution fails.
       }
     },
-    [activeProfileId, state.categoryId],
+    [activeProfileId],
   );
 
   useEffect(() => {
@@ -107,6 +122,7 @@ export const useLiveCatalog = () => {
 
   const setCategoryId = useCallback(
     (categoryId: string | null) => {
+      categoryIdRef.current = categoryId;
       setState((prev) => ({
         ...prev,
         categoryId,

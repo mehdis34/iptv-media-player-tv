@@ -97,14 +97,7 @@ export function SeriesScreen() {
         </View>
       </View>
       {featured ? (
-        <SeriesFeaturedCard
-          item={featured}
-          focusKey={`series-featured-${featured.id}`}
-          onPress={() => {
-            setSelectedSeries(featured);
-            setDetailsVisible(true);
-          }}
-        />
+        <SeriesFeaturedCard item={featured} focusKey={`series-featured-${featured.id}`} />
       ) : null}
     </View>
   );

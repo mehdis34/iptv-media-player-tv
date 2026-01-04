@@ -1,5 +1,6 @@
 import { FlatList, Text, View } from 'react-native';
 import { useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
 
 import { useI18n } from '@/components/i18n/I18nProvider';
 import { ScreenLayout } from '@/layouts/ScreenLayout';
@@ -14,6 +15,7 @@ import { cn } from '@/components/ui/cn';
 
 export function LiveScreen() {
   const { t } = useI18n();
+  const router = useRouter();
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
   const { status, items, categories, categoryId, setCategoryId, loadMore, hasMore } =
     useLiveCatalog();
@@ -44,6 +46,21 @@ export function LiveScreen() {
       setCategoryId(categoryIdValue);
     },
     [setCategoryId],
+  );
+
+  const handleLivePress = useCallback(
+    (item: HomeContentItem) => {
+      router.push({
+        pathname: '/player/[id]',
+        params: {
+          id: item.id,
+          type: 'live',
+          name: item.title,
+          icon: item.image ?? undefined,
+        },
+      });
+    },
+    [router],
   );
 
   const initialFocusKey =
@@ -126,7 +143,7 @@ export function LiveScreen() {
                       <HomeRailCard
                         item={entry.item}
                         focusKey={`live-section-${section.id}-${entry.item.id}`}
-                        onPress={() => {}}
+                        onPress={() => handleLivePress(entry.item)}
                       />
                     );
                   }}
@@ -134,6 +151,7 @@ export function LiveScreen() {
                   initialNumToRender={6}
                   maxToRenderPerBatch={6}
                   windowSize={5}
+                  removeClippedSubviews
                   ItemSeparatorComponent={() => <View className="w-4" />}
                   ListHeaderComponent={() => <View className="w-2" />}
                   ListFooterComponent={() => <View className="w-2" />}
@@ -170,6 +188,10 @@ export function LiveScreen() {
               ) : null
             }
             showsVerticalScrollIndicator={false}
+            initialNumToRender={3}
+            maxToRenderPerBatch={3}
+            windowSize={5}
+            removeClippedSubviews
           />
         ) : (
           <FlatList
@@ -181,7 +203,7 @@ export function LiveScreen() {
                 <HomeRailCard
                   item={item}
                   focusKey={`live-item-${item.id}`}
-                  onPress={() => {}}
+                  onPress={() => handleLivePress(item)}
                   containerClassName="flex-1"
                   imageClassName="aspect-video w-full"
                   placeholderIconSize={36}
@@ -228,8 +250,9 @@ export function LiveScreen() {
             }}
             onEndReachedThreshold={0.6}
             showsVerticalScrollIndicator={false}
-            initialNumToRender={24}
-            maxToRenderPerBatch={24}
+            initialNumToRender={16}
+            maxToRenderPerBatch={16}
+            windowSize={5}
             removeClippedSubviews
           />
         )}

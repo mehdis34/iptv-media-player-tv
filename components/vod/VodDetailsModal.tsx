@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import 'dayjs/locale/fr';
+import { useRouter } from 'expo-router';
 import { TVFocusProvider } from '@/components/focus/TVFocusProvider';
 import { useI18n } from '@/components/i18n/I18nProvider';
 import { Image } from '@/components/ui/ExpoImage';
@@ -75,6 +76,7 @@ const formatDuration = (value: unknown) => {
 
 export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps) {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const [activeItem, setActiveItem] = useState<VodItem | null>(item);
 
   useEffect(() => {
@@ -180,6 +182,23 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
     setActiveItem(next);
   }, []);
 
+  const handlePlay = useCallback(() => {
+    if (!vodId) {
+      return;
+    }
+    onClose();
+    router.push({
+      pathname: '/player/[id]',
+      params: {
+        id: vodId,
+        type: 'vod',
+        name: title,
+        ext: info?.movie_data?.container_extension ?? undefined,
+        icon: image ?? undefined,
+      },
+    });
+  }, [image, info?.movie_data?.container_extension, onClose, router, title, vodId]);
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <SafeAreaView className="flex-1">
@@ -237,6 +256,7 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
                     <TVFocusPressable
                       focusKey={'vod-details-play'}
                       unstyled
+                      onPress={handlePlay}
                       className="group items-center flex flex-row justify-between rounded-lg bg-white py-2 px-6 gap-1"
                       focusClassName="bg-primary"
                     >

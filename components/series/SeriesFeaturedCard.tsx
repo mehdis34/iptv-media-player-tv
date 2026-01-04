@@ -2,6 +2,8 @@ import { Text, View } from 'react-native';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import 'dayjs/locale/fr';
+import { useCallback, useMemo } from 'react';
+import { useRouter } from 'expo-router';
 
 import { TVFocusPressable } from '@/components/focus/TVFocusPressable';
 import { Image } from '@/components/ui/ExpoImage';
@@ -18,7 +20,6 @@ dayjs.extend(localizedFormat);
 type SeriesFeaturedCardProps = {
   item: SeriesItem;
   focusKey: string;
-  onPress: () => void;
 };
 
 const resolveBackdrop = (value?: string[] | string | null) => {
@@ -31,9 +32,9 @@ const resolveBackdrop = (value?: string[] | string | null) => {
 export function SeriesFeaturedCard({
   item,
   focusKey,
-  onPress,
 }: SeriesFeaturedCardProps) {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const { status, info } = useSeriesDetails(item.id);
   const { isFavorite, toggleFavorite } = useFavoriteStatus('series', item.id);
   const details = info?.info;
@@ -56,6 +57,66 @@ export function SeriesFeaturedCard({
   const genre = details?.genre ?? fallback;
   const synopsis = details?.plot ?? fallback;
   const cover = resolveBackdrop(details?.backdrop_path) ?? item.image ?? undefined;
+  const firstEpisode = useMemo(() => {
+    const episodesBySeason = info?.episodes ?? {};
+    const sortedSeasons = (info?.seasons ?? [])
+      .slice()
+      .sort((a, b) => Number(a.season_number ?? 0) - Number(b.season_number ?? 0))
+      .map((season, index) => String(season.season_number ?? index));
+
+    const resolveFirstEpisode = (seasonId: string) => {
+      const entries = episodesBySeason[seasonId] ?? [];
+      if (entries.length === 0) {
+        return null;
+      }
+      const firstEntry = entries[0];
+      if (!firstEntry?.id) {
+        return null;
+      }
+      return {
+        episodeId: String(firstEntry.id),
+        seasonId,
+        containerExtension: firstEntry.container_extension ?? null,
+        image: firstEntry.info?.movie_image ?? null,
+      };
+    };
+
+    for (const seasonId of sortedSeasons) {
+      const resolved = resolveFirstEpisode(seasonId);
+      if (resolved) {
+        return resolved;
+      }
+    }
+
+    const fallbackKeys = Object.keys(episodesBySeason).sort(
+      (a, b) => Number(a) - Number(b),
+    );
+    for (const seasonId of fallbackKeys) {
+      const resolved = resolveFirstEpisode(seasonId);
+      if (resolved) {
+        return resolved;
+      }
+    }
+    return null;
+  }, [info?.episodes, info?.seasons]);
+
+  const handlePlay = useCallback(() => {
+    if (!firstEpisode?.episodeId) {
+      return;
+    }
+    router.push({
+      pathname: '/player/[id]',
+      params: {
+        id: firstEpisode.episodeId,
+        type: 'series',
+        name: item.title,
+        ext: firstEpisode.containerExtension ?? undefined,
+        seriesId: item.id,
+        season: firstEpisode.seasonId ?? undefined,
+        icon: firstEpisode.image ?? item.image ?? undefined,
+      },
+    });
+  }, [firstEpisode, item.id, item.image, item.title, router]);
 
   return (
     <View className="relative h-[60vh] w-full overflow-hidden rounded-2xl bg-white/10 border-white/10 border">
@@ -96,7 +157,7 @@ export function SeriesFeaturedCard({
                 <View className={'flex flex-row gap-3 mt-2'}>
                   <TVFocusPressable
                     focusKey={focusKey}
-                    onPress={onPress}
+                    onPress={handlePlay}
                     unstyled
                     className="group items-center flex flex-row justify-between rounded-lg bg-white py-2 px-6 gap-1"
                     focusClassName="bg-primary"

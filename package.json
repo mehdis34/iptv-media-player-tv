@@ -12,7 +12,7 @@
     "prebuild": "expo prebuild --clean",
     "prebuild:tv": "EXPO_TV=1 expo prebuild --clean",
     "deploy": "npx expo export -p web && npx eas-cli@latest deploy",
-    "postinstall": "node scripts/patch-react-native-css-interop.js"
+    "postinstall": "node scripts/patch-react-native-css-interop.js && node scripts/patch-vlc-plugin.js"
   },
   "dependencies": {
     "@expo-google-fonts/poppins": "^0.4.1",
@@ -42,6 +42,7 @@
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
+    "react-native-vlc-media-player": "^1.0.98",
     "react-native-web": "^0.21.0",
     "react-native-worklets": "0.5.1",
     "zod": "^3.23.8",
@@ -61,5 +62,6 @@
       ]
     }
   },
-  "private": true
+  "private": true,
+  "packageManager": "yarn@4.12.0+sha512.f45ab632439a67f8bc759bf32ead036a1f413287b9042726b7cc4818b7b49e14e9423ba49b18f9e06ea4941c1ad062385b1d8760a8d5091a1a31e5f6219afca8"
 }

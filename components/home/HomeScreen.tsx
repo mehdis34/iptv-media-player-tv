@@ -33,16 +33,6 @@ const getInitialFocusKey = (rails: HomeRail[]) => {
   return undefined;
 };
 
-const getRouteForItem = (item: HomeContentItem) => {
-  if (item.type === 'live') {
-    return '/(tabs)/live';
-  }
-  if (item.type === 'series') {
-    return '/(tabs)/series';
-  }
-  return '/(tabs)/vod';
-};
-
 export function HomeScreen() {
   const { t } = useI18n();
   const router = useRouter();
@@ -92,7 +82,15 @@ export function HomeScreen() {
         setSeriesDetailsVisible(true);
         return;
       }
-      router.push(getRouteForItem(item));
+      router.push({
+        pathname: '/player/[id]',
+        params: {
+          id: item.id,
+          type: 'live',
+          name: item.title,
+          icon: item.image ?? undefined,
+        },
+      });
     },
     [router],
   );

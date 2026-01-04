@@ -97,14 +97,7 @@ export function VodScreen() {
         </View>
       </View>
       {featured ? (
-        <VodFeaturedCard
-          item={featured}
-          focusKey={`vod-featured-${featured.id}`}
-          onPress={() => {
-            setSelectedVod(featured);
-            setDetailsVisible(true);
-          }}
-        />
+        <VodFeaturedCard item={featured} focusKey={`vod-featured-${featured.id}`} />
       ) : null}
     </View>
   );

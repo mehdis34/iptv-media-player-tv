@@ -265,6 +265,36 @@
       "seasons": "{{count}} saisons"
     }
   },
+  "player": {
+    "status": {
+      "loading": "Préparation du flux..."
+    },
+    "errors": {
+      "noProfile": "Aucun profil actif.",
+      "invalidParams": "Flux invalide.",
+      "playback": "Lecture impossible."
+    },
+    "labels": {
+      "live": "En direct",
+      "track": "Piste"
+    },
+    "actions": {
+      "play": "Lecture",
+      "pause": "Pause",
+      "jumpBack": "Reculer 10s",
+      "jumpForward": "Avancer 10s",
+      "jumpLive": "Revenir au direct",
+      "tracks": "Audio et sous-titres",
+      "audio": "Audio",
+      "subtitles": "Sous-titres",
+      "quality": "Qualité",
+      "episodes": "Épisodes",
+      "seasons": "Saisons",
+      "retry": "Réessayer",
+      "favorite": "Ajouter aux favoris",
+      "unfavorite": "Retirer des favoris"
+    }
+  },
   "favorites": {
     "actions": {
       "remove": "Retirer des favoris",

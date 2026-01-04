@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import 'dayjs/locale/fr';
+import { useRouter } from 'expo-router';
 
 import { TVFocusProvider } from '@/components/focus/TVFocusProvider';
 import { useI18n } from '@/components/i18n/I18nProvider';
@@ -45,6 +46,9 @@ type EpisodeItem = {
   title: string;
   image: string | null;
   episodeNumber: number | null;
+  episodeId: string | null;
+  containerExtension: string | null;
+  seasonId: string | null;
 };
 
 const EpisodeCard = ({
@@ -88,6 +92,7 @@ const EpisodeCard = ({
 
 export function SeriesDetailsModal({ visible, item, onClose }: SeriesDetailsModalProps) {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const [activeItem, setActiveItem] = useState<SeriesItem | null>(item);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
   const [isSeasonModalVisible, setSeasonModalVisible] = useState(false);
@@ -192,9 +197,12 @@ export function SeriesDetailsModal({ visible, item, onClose }: SeriesDetailsModa
         title,
         image: episode.info?.movie_image ?? null,
         episodeNumber: Number.isFinite(episodeNumber) ? episodeNumber : null,
+        episodeId: episode.id != null ? String(episode.id) : null,
+        containerExtension: episode.container_extension ?? null,
+        seasonId: activeSeasonId,
       };
     });
-  }, [activeSeasonId, info?.episodes]);
+  }, [activeSeasonId, info?.episodes, resolveEpisodeTitle]);
   const handleSeasonPress = useCallback(() => {
     setSeasonModalVisible(true);
   }, []);
@@ -258,6 +266,36 @@ export function SeriesDetailsModal({ visible, item, onClose }: SeriesDetailsModa
     setSelectedSeasonId(null);
   }, []);
 
+  const handlePlayEpisode = useCallback(
+    (episode: EpisodeItem) => {
+      if (!episode.episodeId || !seriesId) {
+        return;
+      }
+      onClose();
+      router.push({
+        pathname: '/player/[id]',
+        params: {
+          id: episode.episodeId,
+          type: 'series',
+          name: title,
+          ext: episode.containerExtension ?? 'mp4',
+          seriesId,
+          season: episode.seasonId ?? undefined,
+          icon: episode.image ?? image ?? undefined,
+        },
+      });
+    },
+    [image, onClose, router, seriesId, title],
+  );
+
+  const handlePlay = useCallback(() => {
+    const firstPlayable = episodes.find((episode) => episode.episodeId != null) ?? null;
+    if (!firstPlayable) {
+      return;
+    }
+    handlePlayEpisode(firstPlayable);
+  }, [episodes, handlePlayEpisode]);
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <SafeAreaView className="flex-1">
@@ -310,6 +348,7 @@ export function SeriesDetailsModal({ visible, item, onClose }: SeriesDetailsModa
                     <TVFocusPressable
                       focusKey={'series-details-play'}
                       unstyled
+                      onPress={handlePlay}
                       className="group items-center flex flex-row justify-between rounded-lg bg-white py-2 px-6 gap-1"
                       focusClassName="bg-primary"
                     >
@@ -393,7 +432,7 @@ export function SeriesDetailsModal({ visible, item, onClose }: SeriesDetailsModa
                             <EpisodeCard
                               episode={episode}
                               focusKey={`series-details-episode-${episode.id}`}
-                              onPress={() => {}}
+                              onPress={() => handlePlayEpisode(episode)}
                             />
                           )}
                           horizontal

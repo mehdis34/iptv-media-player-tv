@@ -1,5 +1,5 @@
 import { FlatList, Text, View } from 'react-native';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 
 import { useI18n } from '@/components/i18n/I18nProvider';
@@ -9,18 +9,26 @@ import { TVFocusPressable } from '@/components/focus/TVFocusPressable';
 import { TVFocusProvider } from '@/components/focus/TVFocusProvider';
 import { MaterialIcons } from '@/components/ui/Icons';
 import { useSearchCatalog } from '@/components/search/useSearchCatalog';
-import type { VodItem, SeriesItem } from '@/storage/catalog';
+import type { SeriesItem, VodItem } from '@/storage/catalog';
 import { VodDetailsModal } from '@/components/vod/VodDetailsModal';
 import { SeriesDetailsModal } from '@/components/series/SeriesDetailsModal';
 import { HomeRailCard } from '@/components/home/HomeRailCard';
 import type { HomeContentItem } from '@/components/home/types';
-import { VodPosterCard } from '@/components/vod/VodPosterCard';
-import { SeriesPosterCard } from '@/components/series/SeriesPosterCard';
+
+type SearchResultEntry =
+  | { id: string; type: 'live'; homeItem: HomeContentItem }
+  | { id: string; type: 'vod' | 'series'; homeItem: HomeContentItem; item: VodItem | SeriesItem };
 
 export function SearchScreen() {
   const { t } = useI18n();
   const router = useRouter();
-  const [query, setQuery] = useState('');
+  const [inputQuery, setInputQuery] = useState('');
+  const [previewQuery, setPreviewQuery] = useState<string | null>(null);
+  const [suggestionSourceItems, setSuggestionSourceItems] = useState<
+    Array<{ type: 'vod' | 'series'; item: VodItem | SeriesItem }>
+  >([]);
+  const suggestionBlurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchQuery = previewQuery ?? inputQuery;
   const {
     status,
     liveResults,
@@ -29,37 +37,112 @@ export function SearchScreen() {
     suggestedLive,
     suggestedVod,
     suggestedSeries,
-  } = useSearchCatalog(query);
+  } = useSearchCatalog(searchQuery);
   const [selectedVod, setSelectedVod] = useState<VodItem | null>(null);
   const [selectedSeries, setSelectedSeries] = useState<SeriesItem | null>(null);
   const [isVodDetailsVisible, setVodDetailsVisible] = useState(false);
   const [isSeriesDetailsVisible, setSeriesDetailsVisible] = useState(false);
 
-  const isQueryActive = query.trim().length > 0;
-  const liveItems = isQueryActive ? liveResults : suggestedLive;
-  const mediaItems = useMemo(
+  const isQueryActive = inputQuery.trim().length > 0;
+  const isSearchActive = searchQuery.trim().length > 0;
+
+  const suggestedMediaItems = useMemo(
     () => [
-      ...(isQueryActive ? vodResults : suggestedVod).map((item) => ({
+      ...suggestedVod.map((item) => ({
         type: 'vod' as const,
         item,
       })),
-      ...(isQueryActive ? seriesResults : suggestedSeries).map((item) => ({
+      ...suggestedSeries.map((item) => ({
         type: 'series' as const,
         item,
       })),
     ],
-    [isQueryActive, seriesResults, suggestedSeries, suggestedVod, vodResults],
+    [suggestedSeries, suggestedVod],
   );
 
-  const hasResults = liveItems.length > 0 || mediaItems.length > 0;
+  const searchedMediaItems = useMemo(
+    () => [
+      ...vodResults.map((item) => ({
+        type: 'vod' as const,
+        item,
+      })),
+      ...seriesResults.map((item) => ({
+        type: 'series' as const,
+        item,
+      })),
+    ],
+    [seriesResults, vodResults],
+  );
+
+  const liveItems = isSearchActive ? liveResults : suggestedLive;
+  const mediaItems = isSearchActive ? searchedMediaItems : suggestedMediaItems;
+
+  const resultItems: SearchResultEntry[] = useMemo(
+    () => [
+      ...liveItems.map((item) => ({
+        id: item.id,
+        type: 'live' as const,
+        homeItem: item,
+      })),
+      ...mediaItems.map((entry) => ({
+        id: entry.item.id,
+        type: entry.type,
+        homeItem: {
+          id: entry.item.id,
+          title: entry.item.title,
+          image: entry.item.image,
+          type: entry.type,
+        },
+        item: entry.item,
+      })),
+    ],
+    [liveItems, mediaItems],
+  );
+
+  const hasResults = resultItems.length > 0;
+
+  useEffect(() => {
+    if (previewQuery) {
+      return;
+    }
+
+    if (isQueryActive) {
+      setSuggestionSourceItems(searchedMediaItems);
+      return;
+    }
+
+    setSuggestionSourceItems(suggestedMediaItems);
+  }, [isQueryActive, previewQuery, searchedMediaItems, suggestedMediaItems]);
+
+  useEffect(() => {
+    return () => {
+      if (suggestionBlurTimeoutRef.current) {
+        clearTimeout(suggestionBlurTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleClear = useCallback(() => {
-    setQuery('');
+    setPreviewQuery(null);
+    setInputQuery('');
+  }, []);
+
+  const handleInputChange = useCallback((value: string) => {
+    setPreviewQuery(null);
+    setInputQuery(value);
   }, []);
 
   const handleLivePress = useCallback(
-    (_item: HomeContentItem) => {
-      router.push('/(tabs)/live');
+    (item: HomeContentItem) => {
+      router.push({
+        pathname: '/player/[id]',
+        params: {
+          id: item.id,
+          type: 'live',
+          name: item.title,
+          icon: item.image ?? undefined,
+        },
+      });
     },
     [router],
   );
@@ -77,7 +160,29 @@ export function SearchScreen() {
     [],
   );
 
-  const suggestionItems = useMemo(() => mediaItems.slice(0, 8), [mediaItems]);
+  const handleSuggestionPress = useCallback((title: string) => {
+    setPreviewQuery(null);
+    setInputQuery((prev) => (prev === title ? prev : title));
+  }, []);
+
+  const handleSuggestionFocus = useCallback((title: string) => {
+    if (suggestionBlurTimeoutRef.current) {
+      clearTimeout(suggestionBlurTimeoutRef.current);
+      suggestionBlurTimeoutRef.current = null;
+    }
+    setPreviewQuery((prev) => (prev === title ? prev : title));
+  }, []);
+
+  const handleSuggestionBlur = useCallback(() => {
+    if (suggestionBlurTimeoutRef.current) {
+      clearTimeout(suggestionBlurTimeoutRef.current);
+    }
+    suggestionBlurTimeoutRef.current = setTimeout(() => {
+      setPreviewQuery(null);
+    }, 0);
+  }, []);
+
+  const suggestionItems = useMemo(() => suggestionSourceItems.slice(0, 8), [suggestionSourceItems]);
   const suggestionTitle = isQueryActive ? t('search.sections.media') : t('search.suggestions');
 
   return (
@@ -90,20 +195,20 @@ export function SearchScreen() {
               <View className="flex-row items-center gap-3">
                 <TVFocusTextInput
                   focusKey="search-input"
-                  value={query}
+                  value={inputQuery}
                   autoCapitalize={'none'}
-                  onChangeText={setQuery}
+                  onChangeText={handleInputChange}
                   placeholder={t('search.placeholder')}
-                  className="flex-1 text-lg placeholder:text-white/60"
+                  className="flex-1 text-lg placeholder:text-white/60 py-2"
                   focusClassName="border-primary bg-white/20"
                   returnKeyType="search"
                 />
-                {query.length > 0 ? (
+                {inputQuery.length > 0 ? (
                   <TVFocusPressable
                     focusKey="search-clear"
                     onPress={handleClear}
                     unstyled
-                    className="h-12 w-12 items-center justify-center rounded-md border border-white/10 bg-white/5"
+                    className="h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5"
                     focusClassName="bg-primary border-primary"
                     accessibilityLabel={t('search.clear')}
                   >
@@ -120,11 +225,25 @@ export function SearchScreen() {
                 <Text className="text-white/80 text-sm font-semibold">{suggestionTitle}</Text>
                 <FlatList
                   data={suggestionItems}
+                  contentContainerClassName={'gap-3'}
                   keyExtractor={(entry) => `${entry.type}-${entry.item.id}-suggestion`}
                   renderItem={({ item: entry }) => (
-                    <Text className="text-white/70 text-sm" numberOfLines={1}>
-                      {entry.item.title}
-                    </Text>
+                    <TVFocusPressable
+                      focusKey={`search-suggestion-${entry.type}-${entry.item.id}`}
+                      onFocus={() => handleSuggestionFocus(entry.item.title)}
+                      onBlur={handleSuggestionBlur}
+                      onPress={() => handleSuggestionPress(entry.item.title)}
+                      unstyled
+                      className="group items-start rounded-md border-none p-0"
+                      accessibilityLabel={entry.item.title}
+                    >
+                      <Text
+                        className="text-white/70 text-sm group-focus:font-semibold group-focus:text-primary"
+                        numberOfLines={1}
+                      >
+                        {entry.item.title}
+                      </Text>
+                    </TVFocusPressable>
                   )}
                   ItemSeparatorComponent={() => <View className="h-2" />}
                   scrollEnabled={false}
@@ -134,45 +253,25 @@ export function SearchScreen() {
           </View>
           <View className="flex-1">
             <FlatList
-              data={mediaItems}
-              keyExtractor={(entry) => `${entry.type}-${entry.item.id}`}
-              contentContainerClassName="gap-6 pb-16 pr-0"
-              ListHeaderComponent={
-                liveItems.length > 0 ? (
-                  <View className="gap-4 pb-4">
-                    <FlatList
-                      data={liveItems}
-                      keyExtractor={(item) => item.id}
-                      renderItem={({ item }) => (
-                        <HomeRailCard
-                          item={item}
-                          focusKey={`search-live-${item.id}`}
-                          onPress={() => handleLivePress(item)}
-                        />
-                      )}
-                      numColumns={3}
-                      columnWrapperClassName="gap-6"
-                      contentContainerClassName="gap-6 pr-0"
-                      scrollEnabled={false}
-                    />
-                  </View>
-                ) : null
-              }
-              renderItem={({ item: entry }) =>
-                entry.type === 'vod' ? (
-                  <VodPosterCard
-                    item={entry.item}
-                    focusKey={`search-media-${entry.type}-${entry.item.id}`}
-                    onPress={() => handleMediaPress(entry)}
-                  />
-                ) : (
-                  <SeriesPosterCard
-                    item={entry.item}
-                    focusKey={`search-media-${entry.type}-${entry.item.id}`}
-                    onPress={() => handleMediaPress(entry)}
-                  />
-                )
-              }
+              data={resultItems}
+              keyExtractor={(entry) => `${entry.type}-${entry.id}`}
+              contentContainerClassName="gap-6 pb-16"
+              renderItem={({ item: entry }) => (
+                <HomeRailCard
+                  item={entry.homeItem}
+                  focusKey={`search-result-${entry.type}-${entry.id}`}
+                  onPress={() => {
+                    if (entry.type === 'live') {
+                      handleLivePress(entry.homeItem);
+                      return;
+                    }
+                    handleMediaPress({ type: entry.type, item: entry.item });
+                  }}
+                  containerClassName="flex-1"
+                  imageClassName="aspect-video w-full"
+                  placeholderIconSize={36}
+                />
+              )}
               numColumns={3}
               columnWrapperClassName="gap-6"
               ListEmptyComponent={

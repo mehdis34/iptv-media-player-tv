@@ -19,9 +19,27 @@
       ],
       "expo-router",
       "expo-font",
-      "expo-build-properties",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ],
       "expo-web-browser",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "react-native-vlc-media-player",
+        {
+          "ios": {
+            "includeVLCKit": false
+          },
+          "android": {
+            "legacyJetifier": false
+          }
+        }
+      ]
     ],
     "android": {
       "edgeToEdgeEnabled": true,
@@ -33,7 +51,8 @@
     "ios": {
       "splash": {
         "image": "./assets/images/splash.png"
-      }
+      },
+      "bundleIdentifier": "com.mehdiweb34.iptvmediaplayertv"
     },
     "web": {
       "bundler": "metro",

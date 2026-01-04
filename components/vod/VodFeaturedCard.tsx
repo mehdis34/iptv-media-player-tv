@@ -2,6 +2,8 @@ import { Text, View } from 'react-native';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import 'dayjs/locale/fr';
+import { useRouter } from 'expo-router';
+import { useCallback } from 'react';
 
 import { TVFocusPressable } from '@/components/focus/TVFocusPressable';
 import { Image } from '@/components/ui/ExpoImage';
@@ -18,11 +20,11 @@ dayjs.extend(localizedFormat);
 type VodFeaturedCardProps = {
   item: VodItem;
   focusKey: string;
-  onPress: () => void;
 };
 
-export function VodFeaturedCard({ item, focusKey, onPress }: VodFeaturedCardProps) {
+export function VodFeaturedCard({ item, focusKey }: VodFeaturedCardProps) {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const { status, info } = useVodDetails(item.id);
   const { isFavorite, toggleFavorite } = useFavoriteStatus('vod', item.id);
   const details = info?.info;
@@ -43,6 +45,18 @@ export function VodFeaturedCard({ item, focusKey, onPress }: VodFeaturedCardProp
   const genre = details?.genre ?? fallback;
   const synopsis = details?.plot ?? fallback;
   const cover = details?.backdrop_path?.[0] ?? item.image ?? undefined;
+  const handlePlay = useCallback(() => {
+    router.push({
+      pathname: '/player/[id]',
+      params: {
+        id: item.id,
+        type: 'vod',
+        name: item.title,
+        ext: info?.movie_data?.container_extension ?? undefined,
+        icon: item.image ?? undefined,
+      },
+    });
+  }, [info?.movie_data?.container_extension, item.id, item.image, item.title, router]);
 
   return (
     <View className="relative h-[60vh] w-full overflow-hidden rounded-2xl bg-white/10 border-white/10 border">
@@ -83,7 +97,7 @@ export function VodFeaturedCard({ item, focusKey, onPress }: VodFeaturedCardProp
                 <View className={'flex flex-row gap-3 mt-2'}>
                   <TVFocusPressable
                     focusKey={focusKey}
-                    onPress={onPress}
+                    onPress={handlePlay}
                     unstyled
                     className="group items-center flex flex-row justify-between rounded-lg bg-white py-2 px-6 gap-1"
                     focusClassName="bg-primary"
