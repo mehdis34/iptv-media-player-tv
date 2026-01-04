@@ -99,6 +99,20 @@ export const removeFavorite = async (
   );
 };
 
+export const isFavorite = async (
+  profileId: string,
+  itemType: LibraryItemType,
+  itemId: string,
+): Promise<boolean> => {
+  await initLibraryDb();
+  const db = getDb();
+  const row = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(1) as count FROM favorites WHERE profile_id = ? AND item_type = ? AND item_id = ?;',
+    [profileId, itemType, itemId],
+  );
+  return Boolean(row?.count);
+};
+
 export const addRecentlyViewed = async (
   profileId: string,
   itemType: LibraryItemType,

@@ -7,24 +7,35 @@ import { TVFocusPressable } from '@/components/focus/TVFocusPressable';
 import { Image } from '@/components/ui/ExpoImage';
 import { cn } from '@/components/ui/cn';
 import { useI18n } from '@/components/i18n/I18nProvider';
-import { useVodDetails } from '@/components/vod/useVodDetails';
-import { VodItem } from '@/storage/catalog';
+import { useSeriesDetails } from '@/components/series/useSeriesDetails';
+import type { SeriesItem } from '@/storage/catalog';
 import { MaterialIcons } from '@/components/ui/Icons';
 import { truncate } from '@/components/ui/utils';
 import { useFavoriteStatus } from '@/hooks/useFavoriteStatus';
 
 dayjs.extend(localizedFormat);
 
-type VodFeaturedCardProps = {
-  item: VodItem;
+type SeriesFeaturedCardProps = {
+  item: SeriesItem;
   focusKey: string;
   onPress: () => void;
 };
 
-export function VodFeaturedCard({ item, focusKey, onPress }: VodFeaturedCardProps) {
+const resolveBackdrop = (value?: string[] | string | null) => {
+  if (!value) {
+    return null;
+  }
+  return Array.isArray(value) ? value[0] ?? null : value;
+};
+
+export function SeriesFeaturedCard({
+  item,
+  focusKey,
+  onPress,
+}: SeriesFeaturedCardProps) {
   const { t, locale } = useI18n();
-  const { status, info } = useVodDetails(item.id);
-  const { isFavorite, toggleFavorite } = useFavoriteStatus('vod', item.id);
+  const { status, info } = useSeriesDetails(item.id);
+  const { isFavorite, toggleFavorite } = useFavoriteStatus('series', item.id);
   const details = info?.info;
   const fallback = t('common.notAvailable');
 
@@ -32,17 +43,19 @@ export function VodFeaturedCard({ item, focusKey, onPress }: VodFeaturedCardProp
     if (!value) {
       return null;
     }
-    const parsed = dayjs(value);
+    const cleaned = value.split(' ')[0] ?? value;
+    const parsed = dayjs(cleaned);
     if (!parsed.isValid()) {
       return null;
     }
     return parsed.locale(locale === 'fr' ? 'fr' : 'en').format('YYYY');
   };
 
-  const releaseDate = formatReleaseDate(details?.releasedate) ?? fallback;
+  const releaseDate =
+    formatReleaseDate(details?.releaseDate ?? details?.releasedate) ?? fallback;
   const genre = details?.genre ?? fallback;
   const synopsis = details?.plot ?? fallback;
-  const cover = details?.backdrop_path?.[0] ?? item.image ?? undefined;
+  const cover = resolveBackdrop(details?.backdrop_path) ?? item.image ?? undefined;
 
   return (
     <View className="relative h-[60vh] w-full overflow-hidden rounded-2xl bg-white/10 border-white/10 border">
@@ -94,7 +107,7 @@ export function VodFeaturedCard({ item, focusKey, onPress }: VodFeaturedCardProp
                       size={24}
                     />
                     <Text className="text-base font-semibold text-black group-focus:text-white">
-                      {t('vod.actions.play')}
+                      {t('series.actions.play')}
                     </Text>
                   </TVFocusPressable>
                   <TVFocusPressable
@@ -109,7 +122,7 @@ export function VodFeaturedCard({ item, focusKey, onPress }: VodFeaturedCardProp
                       size={24}
                     />
                     <Text className="text-base font-semibold text-white group-focus:text-white">
-                      {t('vod.actions.myListAdd')}
+                      {t('series.actions.myListAdd')}
                     </Text>
                   </TVFocusPressable>
                 </View>

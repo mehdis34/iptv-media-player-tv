@@ -4,17 +4,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import dayjs from 'dayjs';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
 import 'dayjs/locale/fr';
+
 import { TVFocusProvider } from '@/components/focus/TVFocusProvider';
 import { useI18n } from '@/components/i18n/I18nProvider';
 import { Image } from '@/components/ui/ExpoImage';
-import { useVodDetails } from '@/components/vod/useVodDetails';
-import { useVodSimilar } from '@/components/vod/useVodSimilar';
-import type { VodItem } from '@/storage/catalog';
+import { useSeriesDetails } from '@/components/series/useSeriesDetails';
+import { useSeriesSimilar } from '@/components/series/useSeriesSimilar';
+import type { SeriesItem } from '@/storage/catalog';
 import { TVFocusPressable } from '@/components/focus/TVFocusPressable';
 import { FontAwesome, MaterialIcons } from '@/components/ui/Icons';
-import { VodPosterCard } from '@/components/vod/VodPosterCard';
-import { LinearGradient } from 'expo-linear-gradient';
+import { SeriesPosterCard } from '@/components/series/SeriesPosterCard';
 import { useFavoriteStatus } from '@/hooks/useFavoriteStatus';
+import { VodSelectionModal } from '@/components/vod/VodSelectionModal';
 
 dayjs.extend(localizedFormat);
 
@@ -26,71 +27,101 @@ const normalizeTrailerValue = (value?: string | null) => {
   return trimmed.length > 0 ? trimmed : null;
 };
 
-type VodDetailsModalProps = {
+const resolveBackdrop = (value?: string[] | string | null) => {
+  if (!value) {
+    return null;
+  }
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+};
+
+type SeriesDetailsModalProps = {
   visible: boolean;
-  item: VodItem | null;
+  item: SeriesItem | null;
   onClose: () => void;
 };
 
-const parseDurationToMinutes = (value: unknown) => {
-  if (value === null || value === undefined || value === '') {
-    return null;
-  }
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value >= 3600 ? Math.round(value / 60) : Math.round(value);
-  }
-  const raw = String(value).trim();
-  if (!raw) {
-    return null;
-  }
-  const hmsMatch = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-  if (hmsMatch) {
-    const hours = Number(hmsMatch[1] ?? 0);
-    const minutes = Number(hmsMatch[2] ?? 0);
-    const seconds = Number(hmsMatch[3] ?? 0);
-    return hours * 60 + minutes + Math.round(seconds / 60);
-  }
-  if (/^\d+$/.test(raw)) {
-    const numeric = Number(raw);
-    if (!Number.isFinite(numeric)) {
-      return null;
-    }
-    return numeric >= 3600 ? Math.round(numeric / 60) : Math.round(numeric);
-  }
-  return null;
+type EpisodeItem = {
+  id: string;
+  title: string;
+  image: string | null;
+  episodeNumber: number | null;
 };
 
-const formatDuration = (value: unknown) => {
-  const minutes = parseDurationToMinutes(value);
-  if (minutes == null) {
-    return null;
-  }
-  const hours = Math.floor(minutes / 60);
-  const remaining = minutes % 60;
-  if (hours > 0) {
-    return remaining > 0 ? `${hours}h${remaining}m` : `${hours}h`;
-  }
-  return `${remaining}m`;
-};
+const EpisodeCard = ({
+  episode,
+  focusKey,
+  onPress,
+}: {
+  episode: EpisodeItem;
+  focusKey: string;
+  onPress: () => void;
+}) => (
+  <TVFocusPressable
+    focusKey={focusKey}
+    onPress={onPress}
+    unstyled
+    className="group relative w-44 overflow-visible"
+    focusClassName=""
+  >
+    <View className="gap-2">
+      <View className="relative h-24 w-44 overflow-hidden rounded-md bg-white/10">
+        {episode.image ? (
+          <Image source={{ uri: episode.image }} className="h-full w-full" contentFit="cover" />
+        ) : (
+          <View className="h-full w-full items-center justify-center px-2">
+            <Text className="text-white/70 text-xs text-center" numberOfLines={2}>
+              {episode.title}
+            </Text>
+          </View>
+        )}
+        <View
+          pointerEvents="none"
+          className="absolute inset-0 rounded-md border-2 border-transparent group-focus:border-primary"
+        />
+      </View>
+      <Text className="text-white text-sm font-semibold" numberOfLines={2}>
+        {episode.title}
+      </Text>
+    </View>
+  </TVFocusPressable>
+);
 
-export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps) {
+export function SeriesDetailsModal({ visible, item, onClose }: SeriesDetailsModalProps) {
   const { t, locale } = useI18n();
-  const [activeItem, setActiveItem] = useState<VodItem | null>(item);
+  const [activeItem, setActiveItem] = useState<SeriesItem | null>(item);
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
+  const [isSeasonModalVisible, setSeasonModalVisible] = useState(false);
 
   useEffect(() => {
     setActiveItem(item);
   }, [item]);
 
-  const vodId = activeItem?.id ?? null;
-  const { status, info } = useVodDetails(vodId, { mode: 'fetch' });
+  const seriesId = activeItem?.id ?? null;
+  const resolveEpisodeTitle = useCallback(
+    (title?: string | null, number?: number | null) => {
+      if (title && title.trim().length > 0) {
+        return title;
+      }
+      if (number != null) {
+        return t('series.episodes.episodeLabel', { number });
+      }
+      return t('series.episodes.episodeFallback');
+    },
+    [t],
+  );
+
+  useEffect(() => {
+    setSelectedSeasonId(null);
+  }, [seriesId]);
+  const { status, info } = useSeriesDetails(seriesId, { mode: 'fetch' });
   const details = info?.info;
   const fallback = t('common.notAvailable');
   const isLoading = status === 'loading';
-  const { isFavorite, toggleFavorite } = useFavoriteStatus('vod', vodId);
+  const { isFavorite, toggleFavorite } = useFavoriteStatus('series', seriesId);
   const similarCategoryId =
     activeItem?.categoryId ??
-    (info?.movie_data?.category_id != null ? String(info.movie_data.category_id) : null);
-  const { status: similarStatus, items: similarItems } = useVodSimilar(
+    (details?.category_id != null ? String(details.category_id) : null);
+  const { status: similarStatus, items: similarItems } = useSeriesSimilar(
     similarCategoryId,
     activeItem?.id ?? null,
     20,
@@ -99,7 +130,8 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
     if (!value) {
       return null;
     }
-    const parsed = dayjs(value);
+    const cleaned = value.split(' ')[0] ?? value;
+    const parsed = dayjs(cleaned);
     if (!parsed.isValid()) {
       return null;
     }
@@ -107,20 +139,65 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
   };
   const releaseDate = isLoading
     ? t('common.loading')
-    : (formatReleaseDate(details?.releasedate) ?? fallback);
+    : (formatReleaseDate(details?.releaseDate ?? details?.releaseDate) ?? fallback);
   const synopsis = isLoading ? t('common.loading') : (details?.plot ?? fallback);
   const title = isLoading ? (activeItem?.title ?? '') : (details?.name ?? activeItem?.title ?? '');
   const image = isLoading
     ? (activeItem?.image ?? null)
-    : (details?.cover_big ?? details?.movie_image ?? activeItem?.image ?? null);
+    : (details?.cover_big ?? details?.cover ?? activeItem?.image ?? null);
   const cover = isLoading
     ? (activeItem?.image ?? undefined)
-    : (details?.backdrop_path?.[0] ?? image ?? undefined);
-  const rawDuration = details?.duration ?? null;
-  const duration = isLoading ? t('common.loading') : (formatDuration(rawDuration) ?? fallback);
-  const trailerValue = normalizeTrailerValue(
-    isLoading ? null : (details?.trailer ?? details?.youtube_trailer ?? null),
-  );
+    : (resolveBackdrop(details?.backdrop_path) ?? image ?? undefined);
+  const seasonCount = info?.seasons?.length ?? null;
+  const seasonsLabel = isLoading
+    ? t('common.loading')
+    : seasonCount != null
+      ? t(seasonCount === 1 ? 'series.fields.seasonsOne' : 'series.fields.seasons', {
+          count: seasonCount,
+        })
+      : fallback;
+  const trailerValue = normalizeTrailerValue(isLoading ? null : (details?.youtube_trailer ?? null));
+  const seasonOptions = useMemo(() => {
+    const episodesBySeason = info?.episodes ?? {};
+    const seasons = info?.seasons ?? [];
+    return seasons
+      .slice()
+      .sort((a, b) => Number(a.season_number ?? 0) - Number(b.season_number ?? 0))
+      .filter((season) => {
+        const key = String(season.season_number ?? '');
+        return (episodesBySeason[key]?.length ?? 0) > 0;
+      })
+      .map((season, index) => ({
+        id: String(season.season_number ?? index),
+        label: t('series.episodes.seasonLabel', {
+          number: season.season_number ?? index + 1,
+        }),
+      }));
+  }, [info?.episodes, info?.seasons, t]);
+  const defaultSeasonId = seasonOptions[0]?.id ?? null;
+  const activeSeasonId = selectedSeasonId ?? defaultSeasonId;
+  const activeSeasonLabel =
+    seasonOptions.find((option) => option.id === activeSeasonId)?.label ??
+    t('series.episodes.selectSeason');
+  const episodes = useMemo<EpisodeItem[]>(() => {
+    if (!activeSeasonId) {
+      return [];
+    }
+    const seasonEpisodes = info?.episodes?.[activeSeasonId] ?? [];
+    return seasonEpisodes.map((episode, index) => {
+      const episodeNumber = episode.episode_num != null ? Number(episode.episode_num) : index + 1;
+      const title = resolveEpisodeTitle(episode.title, episodeNumber);
+      return {
+        id: String(episode.id ?? `${activeSeasonId}-${index}`),
+        title,
+        image: episode.info?.movie_image ?? null,
+        episodeNumber: Number.isFinite(episodeNumber) ? episodeNumber : null,
+      };
+    });
+  }, [activeSeasonId, info?.episodes]);
+  const handleSeasonPress = useCallback(() => {
+    setSeasonModalVisible(true);
+  }, []);
   const trailerId = useMemo(() => {
     if (!trailerValue) {
       return null;
@@ -176,8 +253,9 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
     void run();
   }, [trailerId, trailerUrl]);
 
-  const handleSelectSimilar = useCallback((next: VodItem) => {
+  const handleSelectSimilar = useCallback((next: SeriesItem) => {
     setActiveItem(next);
+    setSelectedSeasonId(null);
   }, []);
 
   return (
@@ -199,13 +277,8 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
                 contentFit="cover"
               />
             ) : null}
-            <LinearGradient
-              className="absolute inset-0"
-              colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.2)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            />
-            <TVFocusProvider initialFocusKey="vod-details-play">
+            <View className="absolute inset-0 bg-black/70" />
+            <TVFocusProvider initialFocusKey="series-details-play">
               <ScrollView
                 className="flex-1"
                 contentContainerClassName="gap-6 justify-center py-10"
@@ -223,7 +296,7 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
                     <Text className="text-white text-3xl max-w-md font-bold">{title}</Text>
                     <View>
                       <Text className="text-white text-base">
-                        {releaseDate} • {duration}
+                        {releaseDate} • {seasonsLabel}
                       </Text>
                       {!isLoading && details?.genre ? (
                         <Text className="text-white text-base">{details.genre}</Text>
@@ -235,7 +308,7 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
                   <Text className="text-white/90 text-base leading-6">{synopsis}</Text>
                   <View className={'flex flex-row gap-3 mt-2'}>
                     <TVFocusPressable
-                      focusKey={'vod-details-play'}
+                      focusKey={'series-details-play'}
                       unstyled
                       className="group items-center flex flex-row justify-between rounded-lg bg-white py-2 px-6 gap-1"
                       focusClassName="bg-primary"
@@ -246,7 +319,7 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
                         size={24}
                       />
                       <Text className="text-base font-semibold text-black group-focus:text-white">
-                        {t('vod.actions.play')}
+                        {t('series.actions.play')}
                       </Text>
                     </TVFocusPressable>
                     <TVFocusPressable
@@ -261,7 +334,7 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
                         size={24}
                       />
                       <Text className="text-base font-semibold text-white group-focus:text-white">
-                        {t('vod.actions.myListAdd')}
+                        {t('series.actions.myListAdd')}
                       </Text>
                     </TVFocusPressable>
                     {hasTrailer && (
@@ -273,28 +346,75 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
                       >
                         <FontAwesome
                           name={'youtube-play'}
-                          className="text-white group-focus:"
+                          className="text-white group-focus:text-white"
                           size={24}
                         />
                         <Text
                           className={'text-base font-semibold text-white group-focus:text-white'}
                         >
-                          {t('vod.actions.trailer')}
+                          {t('series.actions.trailer')}
                         </Text>
                       </TVFocusPressable>
                     )}
                   </View>
                   <View className={'gap-1'}>
-                    {!isLoading && details?.actors ? (
+                    {!isLoading && details?.cast ? (
                       <Text className="text-white/70 text-base">
-                        {t('vod.fields.casting')} : {details.actors}
+                        {t('series.fields.casting')} : {details.cast}
                       </Text>
                     ) : null}
                   </View>
                 </View>
                 <View className="gap-3">
+                  {seasonOptions.length > 0 ? (
+                    <View className="gap-3">
+                      <View className="flex-row items-center gap-4 px-10">
+                        <TVFocusPressable
+                          onPress={handleSeasonPress}
+                          unstyled
+                          className="px-4 py-2 rounded-md border border-white/10 bg-white/5 flex-row items-center gap-1"
+                          focusClassName="bg-primary border-primary"
+                        >
+                          <Text className="text-white text-sm font-semibold">
+                            {activeSeasonLabel}
+                          </Text>
+                          <MaterialIcons
+                            name={'keyboard-arrow-down'}
+                            className={'text-white'}
+                            size={20}
+                          />
+                        </TVFocusPressable>
+                      </View>
+                      {episodes.length > 0 ? (
+                        <FlatList
+                          data={episodes}
+                          keyExtractor={(episode) => episode.id}
+                          renderItem={({ item: episode }) => (
+                            <EpisodeCard
+                              episode={episode}
+                              focusKey={`series-details-episode-${episode.id}`}
+                              onPress={() => {}}
+                            />
+                          )}
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerClassName="gap-4 px-10"
+                          initialNumToRender={6}
+                          maxToRenderPerBatch={6}
+                          windowSize={5}
+                          removeClippedSubviews
+                        />
+                      ) : (
+                        <Text className="text-white/70 text-sm px-10">
+                          {t('series.episodes.empty')}
+                        </Text>
+                      )}
+                    </View>
+                  ) : null}
+                </View>
+                <View className="gap-3">
                   <Text className="text-white text-lg font-semibold px-10">
-                    {t('vod.details.similarTitle')}
+                    {t('series.details.similarTitle')}
                   </Text>
                   {similarStatus === 'loading' ? (
                     <Text className="text-white/70 text-sm px-10">{t('common.loading')}</Text>
@@ -304,16 +424,16 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
                     </Text>
                   ) : similarItems.length === 0 ? (
                     <Text className="text-white/70 text-sm px-10">
-                      {t('vod.details.similarEmpty')}
+                      {t('series.details.similarEmpty')}
                     </Text>
                   ) : (
                     <FlatList
                       data={similarItems}
                       keyExtractor={(similar) => similar.id}
                       renderItem={({ item: similar }) => (
-                        <VodPosterCard
+                        <SeriesPosterCard
                           item={similar}
-                          focusKey={`vod-details-similar-${similar.id}`}
+                          focusKey={`series-details-similar-${similar.id}`}
                           onPress={() => handleSelectSimilar(similar)}
                         />
                       )}
@@ -335,6 +455,21 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
           </>
         )}
       </SafeAreaView>
+      <VodSelectionModal
+        visible={isSeasonModalVisible}
+        titleKey="series.episodes.selectSeason"
+        options={seasonOptions.map((option) => ({
+          id: option.id,
+          label: option.label,
+        }))}
+        selectedId={activeSeasonId}
+        onSelect={(value) => {
+          if (value != null) {
+            setSelectedSeasonId(value);
+          }
+        }}
+        onClose={() => setSeasonModalVisible(false)}
+      />
     </Modal>
   );
 }

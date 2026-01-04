@@ -21,7 +21,7 @@ export const HOME_RAILS: HomeRailConfig[] = [
     id: 'favorites',
     titleKey: 'home.rail.favorites',
     seeMoreLabelKey: 'home.rail.seeMoreFavorites',
-    seeMoreRoute: '/(tabs)/vod',
+    seeMoreRoute: '/(tabs)/favorites',
     seeMoreKind: 'poster',
   },
   {

@@ -15,6 +15,7 @@ const tabLabelMap: Record<string, TranslationKey> = {
   live: 'tabs.live',
   vod: 'tabs.vod',
   series: 'tabs.series',
+  favorites: 'tabs.favorites',
   search: 'tabs.search',
   settings: 'tabs.settings',
 };
@@ -26,6 +27,7 @@ const tabIconMap: Record<string, IconName> = {
   live: 'live-tv',
   vod: 'movie',
   series: 'tv',
+  favorites: 'favorite',
   search: 'search',
   settings: 'settings',
 };

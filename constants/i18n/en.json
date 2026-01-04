@@ -19,6 +19,7 @@
     "live": "Live",
     "vod": "VOD",
     "series": "Series",
+    "favorites": "Favorites",
     "search": "Search",
     "settings": "Settings"
   },
@@ -148,6 +149,10 @@
       "title": "Home",
       "empty": "Your home rails will appear here"
     },
+    "favorites": {
+      "title": "My favorites",
+      "empty": "No favorites yet"
+    },
     "live": {
       "title": "Live",
       "empty": "Live TV will appear here"
@@ -169,12 +174,36 @@
       "empty": "Settings will appear here"
     }
   },
+  "search": {
+    "placeholder": "Search movies, series, channels...",
+    "clear": "Clear search",
+    "hint": "Type a title or channel to start searching.",
+    "suggestions": "Suggestions",
+    "sections": {
+      "live": "Live channels",
+      "media": "Movies & series",
+      "liveSuggested": "Suggested live",
+      "mediaSuggested": "Suggested picks"
+    },
+    "emptyTitle": "No results found",
+    "emptySubtitle": "Try another movie, series, or channel."
+  },
+  "live": {
+    "actions": {
+      "categories": "Categories"
+    },
+    "categories": {
+      "all": "All categories"
+    }
+  },
   "vod": {
     "actions": {
       "categories": "Categories",
       "sort": "Sort",
       "list": "List",
-      "trailer": "Trailer"
+      "trailer": "Trailer",
+      "play": "Play",
+      "myListAdd": "My list"
     },
     "categories": {
       "all": "All categories"
@@ -199,6 +228,50 @@
       "genre": "Genre",
       "casting": "Casting",
       "synopsis": "Synopsis"
+    }
+  },
+  "series": {
+    "actions": {
+      "categories": "Categories",
+      "sort": "Sort",
+      "trailer": "Trailer",
+      "play": "Play",
+      "myListAdd": "My list"
+    },
+    "episodes": {
+      "title": "Episodes",
+      "selectSeason": "Select season",
+      "seasonLabel": "Season {{number}}",
+      "episodeLabel": "Episode {{number}}",
+      "episodeFallback": "Episode",
+      "empty": "No episodes available"
+    },
+    "categories": {
+      "all": "All categories"
+    },
+    "sort": {
+      "recent": "Recently added",
+      "oldest": "Oldest",
+      "az": "A–Z",
+      "za": "Z–A"
+    },
+    "details": {
+      "similarTitle": "Similar series",
+      "similarEmpty": "No similar series"
+    },
+    "fields": {
+      "casting": "Casting",
+      "seasonsOne": "{{count}} season",
+      "seasons": "{{count}} seasons"
+    }
+  },
+  "favorites": {
+    "actions": {
+      "remove": "Remove from favorites",
+      "removeTitle": "Remove favorite?",
+      "removeMessage": "This item will be removed from your favorites.",
+      "removeConfirm": "Remove",
+      "removeCancel": "Cancel"
     }
   },
   "notFound": {

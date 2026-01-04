@@ -1,5 +1,5 @@
 import { ScrollView, Text, View } from 'react-native';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 
 import { TVFocusProvider } from '@/components/focus/TVFocusProvider';
@@ -11,6 +11,9 @@ import { useI18n } from '@/components/i18n/I18nProvider';
 import { FullscreenLoadingModal } from '@/components/ui/FullscreenLoadingModal';
 import { useSyncStatusStore } from '@/hooks/useSyncStatusStore';
 import { ScreenLayout } from '@/layouts/ScreenLayout';
+import { VodDetailsModal } from '@/components/vod/VodDetailsModal';
+import { SeriesDetailsModal } from '@/components/series/SeriesDetailsModal';
+import type { SeriesItem, VodItem } from '@/storage/catalog';
 
 const getInitialFocusKey = (rails: HomeRail[]) => {
   if (rails.length === 0) {
@@ -46,6 +49,10 @@ export function HomeScreen() {
   const { rails: loadedRails } = useHomeRails();
   const syncStatus = useSyncStatusStore((state) => state.status);
   const syncProgress = useSyncStatusStore((state) => state.progress);
+  const [selectedVod, setSelectedVod] = useState<VodItem | null>(null);
+  const [selectedSeries, setSelectedSeries] = useState<SeriesItem | null>(null);
+  const [isVodDetailsVisible, setVodDetailsVisible] = useState(false);
+  const [isSeriesDetailsVisible, setSeriesDetailsVisible] = useState(false);
 
   const fallbackRails = useMemo<HomeRail[]>(
     () =>
@@ -65,6 +72,26 @@ export function HomeScreen() {
 
   const handleItemPress = useCallback(
     (item: HomeContentItem) => {
+      if (item.type === 'vod') {
+        setSelectedVod({
+          id: item.id,
+          title: item.title,
+          image: item.image,
+          categoryId: null,
+        });
+        setVodDetailsVisible(true);
+        return;
+      }
+      if (item.type === 'series') {
+        setSelectedSeries({
+          id: item.id,
+          title: item.title,
+          image: item.image,
+          categoryId: null,
+        });
+        setSeriesDetailsVisible(true);
+        return;
+      }
       router.push(getRouteForItem(item));
     },
     [router],
@@ -105,6 +132,16 @@ export function HomeScreen() {
         visible={syncStatus === 'loading'}
         titleKey={syncProgress?.stepKey ?? 'auth.status.loadingData'}
         progress={syncProgress}
+      />
+      <VodDetailsModal
+        visible={isVodDetailsVisible}
+        item={selectedVod}
+        onClose={() => setVodDetailsVisible(false)}
+      />
+      <SeriesDetailsModal
+        visible={isSeriesDetailsVisible}
+        item={selectedSeries}
+        onClose={() => setSeriesDetailsVisible(false)}
       />
     </ScreenLayout>
   );

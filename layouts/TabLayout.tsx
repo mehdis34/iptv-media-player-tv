@@ -16,6 +16,7 @@ export default function TabLayout() {
       <Tabs.Screen name="live" options={{ title: t('tabs.live') }} />
       <Tabs.Screen name="vod" options={{ title: t('tabs.vod') }} />
       <Tabs.Screen name="series" options={{ title: t('tabs.series') }} />
+      <Tabs.Screen name="favorites" options={{ title: t('tabs.favorites') }} />
       <Tabs.Screen name="settings" options={{ title: t('tabs.settings') }} />
     </Tabs>
   );

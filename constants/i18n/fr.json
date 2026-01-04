@@ -17,8 +17,9 @@
   "tabs": {
     "home": "Accueil",
     "live": "Direct",
-    "vod": "VOD",
+    "vod": "Films",
     "series": "Séries",
+    "favorites": "Favoris",
     "search": "Recherche",
     "settings": "Paramètres"
   },
@@ -30,7 +31,7 @@
       "devPrefill": "[Dev mode] Préremplir",
       "aside": {
         "title": "Streaming pensé TV",
-        "subtitle": "Votre portail Xtream donne accès au direct, à la VOD et aux séries dans une seule expérience.",
+        "subtitle": "Votre portail Xtream donne accès au direct, aux films et aux séries dans une seule expérience.",
         "highlight1": "Démarrage rapide",
         "highlight2": "Télécommande prête",
         "highlight3": "Favoris"
@@ -148,13 +149,17 @@
       "title": "Accueil",
       "empty": "Vos rails d'accueil apparaîtront ici"
     },
+    "favorites": {
+      "title": "Mes favoris",
+      "empty": "Aucun favori pour le moment"
+    },
     "live": {
       "title": "Direct",
       "empty": "Le direct apparaîtra ici"
     },
     "vod": {
       "title": "Films",
-      "empty": "Le catalogue VOD apparaîtra ici"
+      "empty": "Le catalogue films apparaîtra ici"
     },
     "series": {
       "title": "Séries",
@@ -169,12 +174,36 @@
       "empty": "Les paramètres apparaîtront ici"
     }
   },
+  "search": {
+    "placeholder": "Rechercher films, séries, chaînes...",
+    "clear": "Effacer la recherche",
+    "hint": "Saisissez un titre ou une chaîne pour lancer la recherche.",
+    "suggestions": "Suggestions",
+    "sections": {
+      "live": "Chaînes TV",
+      "media": "Films et séries",
+      "liveSuggested": "Chaînes suggérées",
+      "mediaSuggested": "Suggestions"
+    },
+    "emptyTitle": "Aucun résultat",
+    "emptySubtitle": "Essayez un autre film, série ou chaîne."
+  },
+  "live": {
+    "actions": {
+      "categories": "Catégories"
+    },
+    "categories": {
+      "all": "Toutes les catégories"
+    }
+  },
   "vod": {
     "actions": {
       "categories": "Catégories",
       "sort": "Tri",
       "list": "Liste",
-      "trailer": "Bande annonce"
+      "trailer": "Bande annonce",
+      "play": "Lecture",
+      "myListAdd": "Ma liste"
     },
     "categories": {
       "all": "Toutes les catégories"
@@ -199,6 +228,50 @@
       "genre": "Genre",
       "casting": "Casting",
       "synopsis": "Synopsis"
+    }
+  },
+  "series": {
+    "actions": {
+      "categories": "Catégories",
+      "sort": "Tri",
+      "trailer": "Bande annonce",
+      "play": "Lecture",
+      "myListAdd": "Ma liste"
+    },
+    "episodes": {
+      "title": "Épisodes",
+      "selectSeason": "Choisir une saison",
+      "seasonLabel": "Saison {{number}}",
+      "episodeLabel": "Épisode {{number}}",
+      "episodeFallback": "Épisode",
+      "empty": "Aucun épisode disponible"
+    },
+    "categories": {
+      "all": "Toutes les catégories"
+    },
+    "sort": {
+      "recent": "Récents",
+      "oldest": "Anciens",
+      "az": "De A à Z",
+      "za": "De Z à A"
+    },
+    "details": {
+      "similarTitle": "Séries similaires",
+      "similarEmpty": "Aucune série similaire"
+    },
+    "fields": {
+      "casting": "Casting",
+      "seasonsOne": "{{count}} saison",
+      "seasons": "{{count}} saisons"
+    }
+  },
+  "favorites": {
+    "actions": {
+      "remove": "Retirer des favoris",
+      "removeTitle": "Retirer des favoris ?",
+      "removeMessage": "Cet élément sera retiré de vos favoris.",
+      "removeConfirm": "Retirer",
+      "removeCancel": "Annuler"
     }
   },
   "notFound": {

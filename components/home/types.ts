@@ -10,11 +10,17 @@ export type HomeContentItem = {
   epgChannelId?: string | null;
   epgTitle?: string | null;
   epgProgress?: number | null;
+  epgStart?: string | null;
+  epgEnd?: string | null;
 };
 
 export type HomeRailKind = 'poster' | 'live';
 
-export type HomeSeeMoreRoute = '/(tabs)/live' | '/(tabs)/vod' | '/(tabs)/series';
+export type HomeSeeMoreRoute =
+  | '/(tabs)/live'
+  | '/(tabs)/vod'
+  | '/(tabs)/series'
+  | '/(tabs)/favorites';
 
 export type HomeRail = {
   id: string;

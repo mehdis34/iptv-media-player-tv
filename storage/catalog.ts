@@ -266,6 +266,23 @@ export type VodItem = {
   categoryId?: string | null;
 };
 
+export type LiveCategory = {
+  id: string;
+  name: string;
+};
+
+export type SeriesCategory = {
+  id: string;
+  name: string;
+};
+
+export type SeriesItem = {
+  id: string;
+  title: string;
+  image: string | null;
+  categoryId?: string | null;
+};
+
 export type HomeEpgListing = {
   channelId: string;
   title: string;
@@ -659,6 +676,68 @@ export const getVodCategories = async (
   }));
 };
 
+export const getLiveCategories = async (
+  profileId: string,
+): Promise<LiveCategory[]> => {
+  const db = getDb();
+  const rows = await db.getAllAsync<{
+    category_id: string | number;
+    category_name: string | number | null;
+  }>(
+    'SELECT category_id, category_name FROM categories WHERE profile_id = ? AND type = ? ORDER BY rowid ASC;',
+    [profileId, 'live'],
+  );
+  return rows.map((row) => ({
+    id: String(row.category_id),
+    name: String(row.category_name ?? ''),
+  }));
+};
+
+export const getLivePage = async (
+  profileId: string,
+  limit: number,
+  offset: number,
+  categoryId?: string | null,
+  options?: { includeMissingIcons?: boolean },
+): Promise<HomeCatalogItem[]> => {
+  const db = getDb();
+  const includeMissingIcons = options?.includeMissingIcons ?? false;
+  const where = ['profile_id = ?'];
+  const params: Array<string | number | null> = [profileId];
+  if (!includeMissingIcons) {
+    where.push('stream_icon IS NOT NULL', "TRIM(stream_icon) <> ''");
+  }
+  if (categoryId) {
+    where.push('category_id = ?');
+    params.push(categoryId);
+  }
+  params.push(limit, offset);
+  const rows = await db.getAllAsync<{
+    stream_id: string;
+    name: string;
+    stream_icon?: string | null;
+    epg_channel_id?: string | number | null;
+    epg_id?: string | number | null;
+  }>(
+    `SELECT stream_id, name, stream_icon, epg_channel_id, epg_id FROM live_streams WHERE ${where.join(
+      ' AND ',
+    )} ORDER BY rowid ASC LIMIT ? OFFSET ?;`,
+    params,
+  );
+  return rows.map((row) => ({
+    id: row.stream_id,
+    title: row.name ?? '',
+    image: row.stream_icon ?? null,
+    type: 'live',
+    epgChannelId:
+      row.epg_channel_id != null
+        ? String(row.epg_channel_id)
+        : row.epg_id != null
+          ? String(row.epg_id)
+          : null,
+  }));
+};
+
 export type VodSortKey = 'recent' | 'oldest' | 'az' | 'za';
 
 export const getVodPage = async (
@@ -704,6 +783,106 @@ export const getVodPage = async (
   }));
 };
 
+export const searchLiveStreams = async (
+  profileId: string,
+  query: string,
+  limit = 20,
+): Promise<HomeCatalogItem[]> => {
+  const db = getDb();
+  const pattern = `%${query.toLowerCase()}%`;
+  const rows = await db.getAllAsync<{
+    stream_id: string;
+    name: string;
+    stream_icon?: string | null;
+    epg_channel_id?: string | number | null;
+    epg_id?: string | number | null;
+  }>(
+    `
+      SELECT stream_id, name, stream_icon, epg_channel_id, epg_id
+      FROM live_streams
+      WHERE profile_id = ?
+        AND lower(name) LIKE ?
+      ORDER BY name COLLATE NOCASE ASC
+      LIMIT ?;
+    `,
+    [profileId, pattern, limit],
+  );
+  return rows.map((row) => ({
+    id: row.stream_id,
+    title: row.name ?? '',
+    image: row.stream_icon ?? null,
+    type: 'live',
+    epgChannelId:
+      row.epg_channel_id != null
+        ? String(row.epg_channel_id)
+        : row.epg_id != null
+          ? String(row.epg_id)
+          : null,
+  }));
+};
+
+export const searchVodStreams = async (
+  profileId: string,
+  query: string,
+  limit = 20,
+): Promise<VodItem[]> => {
+  const db = getDb();
+  const pattern = `%${query.toLowerCase()}%`;
+  const rows = await db.getAllAsync<{
+    vod_id: string;
+    name: string;
+    stream_icon?: string | null;
+    category_id?: string | number | null;
+  }>(
+    `
+      SELECT vod_id, name, stream_icon, category_id
+      FROM vod_streams
+      WHERE profile_id = ?
+        AND lower(name) LIKE ?
+      ORDER BY name COLLATE NOCASE ASC
+      LIMIT ?;
+    `,
+    [profileId, pattern, limit],
+  );
+  return rows.map((row) => ({
+    id: row.vod_id,
+    title: row.name ?? '',
+    image: row.stream_icon ?? null,
+    categoryId: row.category_id != null ? String(row.category_id) : null,
+  }));
+};
+
+export const searchSeriesItems = async (
+  profileId: string,
+  query: string,
+  limit = 20,
+): Promise<SeriesItem[]> => {
+  const db = getDb();
+  const pattern = `%${query.toLowerCase()}%`;
+  const rows = await db.getAllAsync<{
+    series_id: string;
+    name: string;
+    cover?: string | null;
+    category_id?: string | number | null;
+  }>(
+    `
+      SELECT series_id, name, cover, category_id
+      FROM series
+      WHERE profile_id = ?
+        AND lower(name) LIKE ?
+      ORDER BY name COLLATE NOCASE ASC
+      LIMIT ?;
+    `,
+    [profileId, pattern, limit],
+  );
+  return rows.map((row) => ({
+    id: row.series_id,
+    title: row.name ?? '',
+    image: row.cover ?? null,
+    categoryId: row.category_id != null ? String(row.category_id) : null,
+  }));
+};
+
 export const getVodSimilar = async (
   profileId: string,
   categoryId: string,
@@ -733,6 +912,101 @@ export const getVodSimilar = async (
     id: row.vod_id,
     title: row.name ?? '',
     image: row.stream_icon ?? null,
+    categoryId: row.category_id != null ? String(row.category_id) : null,
+  }));
+};
+
+export const getSeriesCategories = async (
+  profileId: string,
+): Promise<SeriesCategory[]> => {
+  const db = getDb();
+  const rows = await db.getAllAsync<{
+    category_id: string | number;
+    category_name: string | number | null;
+  }>(
+    'SELECT category_id, category_name FROM categories WHERE profile_id = ? AND type = ? ORDER BY rowid ASC;',
+    [profileId, 'series'],
+  );
+  return rows.map((row) => ({
+    id: String(row.category_id),
+    name: String(row.category_name ?? ''),
+  }));
+};
+
+export type SeriesSortKey = 'recent' | 'oldest' | 'az' | 'za';
+
+export const getSeriesPage = async (
+  profileId: string,
+  limit: number,
+  offset: number,
+  sort: SeriesSortKey,
+  categoryId?: string | null,
+): Promise<SeriesItem[]> => {
+  const db = getDb();
+  const orderBy =
+    sort === 'az'
+      ? 'name COLLATE NOCASE ASC'
+      : sort === 'za'
+        ? 'name COLLATE NOCASE DESC'
+        : sort === 'oldest'
+          ? 'CAST(last_modified AS INTEGER) ASC, series_id ASC'
+          : 'CAST(last_modified AS INTEGER) DESC, series_id DESC';
+  const where: string[] = ['profile_id = ?'];
+  const params: Array<string | number | null> = [profileId];
+  if (categoryId) {
+    where.push('category_id = ?');
+    params.push(categoryId);
+  }
+  params.push(limit, offset);
+  const rows = await db.getAllAsync<{
+    series_id: string;
+    name: string;
+    cover?: string | null;
+    category_id?: string | number | null;
+  }>(
+    `SELECT series_id, name, cover, category_id FROM series WHERE ${where.join(
+      ' AND ',
+    )} ORDER BY ${orderBy} LIMIT ? OFFSET ?;`,
+    params,
+  );
+  return rows.map((row) => ({
+    id: row.series_id,
+    title: row.name ?? '',
+    image: row.cover ?? null,
+    categoryId:
+      row.category_id != null ? String(row.category_id) : null,
+  }));
+};
+
+export const getSeriesSimilar = async (
+  profileId: string,
+  categoryId: string,
+  excludeId?: string | null,
+  limit = 10,
+): Promise<SeriesItem[]> => {
+  const db = getDb();
+  const where: string[] = ['profile_id = ?', 'category_id = ?'];
+  const params: Array<string | number | null> = [profileId, categoryId];
+  if (excludeId) {
+    where.push('series_id != ?');
+    params.push(excludeId);
+  }
+  params.push(limit);
+  const rows = await db.getAllAsync<{
+    series_id: string;
+    name: string;
+    cover?: string | null;
+    category_id?: string | number | null;
+  }>(
+    `SELECT series_id, name, cover, category_id FROM series WHERE ${where.join(
+      ' AND ',
+    )} ORDER BY CAST(last_modified AS INTEGER) DESC, series_id DESC LIMIT ?;`,
+    params,
+  );
+  return rows.map((row) => ({
+    id: row.series_id,
+    title: row.name ?? '',
+    image: row.cover ?? null,
     categoryId: row.category_id != null ? String(row.category_id) : null,
   }));
 };
@@ -944,6 +1218,25 @@ export const getVodInfo = async (
   }
   try {
     return JSON.parse(row.info) as XtreamVodInfoResponse;
+  } catch {
+    return null;
+  }
+};
+
+export const getSeriesInfo = async (
+  profileId: string,
+  seriesId: string,
+): Promise<XtreamSeriesInfoResponse | null> => {
+  const db = getDb();
+  const row = await db.getFirstAsync<{ info: string }>(
+    'SELECT info FROM series_info WHERE profile_id = ? AND series_id = ? LIMIT 1;',
+    [profileId, seriesId],
+  );
+  if (!row?.info) {
+    return null;
+  }
+  try {
+    return JSON.parse(row.info) as XtreamSeriesInfoResponse;
   } catch {
     return null;
   }

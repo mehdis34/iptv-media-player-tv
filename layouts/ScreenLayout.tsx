@@ -10,14 +10,20 @@ type ScreenLayoutProps = {
   titleKey?: TranslationKey;
   children?: ReactNode;
   contentClassName?: string;
+  edgeToEdge?: boolean;
 };
 
-export function ScreenLayout({ titleKey, children, contentClassName }: ScreenLayoutProps) {
+export function ScreenLayout({
+  titleKey,
+  children,
+  contentClassName,
+  edgeToEdge,
+}: ScreenLayoutProps) {
   const { t } = useI18n();
 
   return (
     <SafeAreaView className="flex-1 bg-neutral-950">
-      <View className="flex-1 px-10 py-8">
+      <View className={cn('flex-1 py-8', edgeToEdge ? 'px-0' : 'px-10')}>
         <View className={cn('flex-1 w-full gap-6', contentClassName)}>
           {titleKey ? (
             <Text className="text-white text-3xl font-semibold">{t(titleKey)}</Text>
