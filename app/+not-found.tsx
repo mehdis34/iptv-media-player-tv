@@ -1,32 +1,31 @@
-import { Link, Stack } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
+import { Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { TVFocusPressable } from '@/components/focus/TVFocusPressable';
+import { useI18n } from '@/components/i18n/I18nProvider';
 
 export default function NotFoundScreen() {
+  const { t } = useI18n();
+  const router = useRouter();
+
   return (
-    <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
-      <ThemedView style={styles.container}>
-        <ThemedText type="title">This screen doesn't exist.</ThemedText>
-        <Link href="/" style={styles.link}>
-          <ThemedText type="link">Go to home screen!</ThemedText>
-        </Link>
-      </ThemedView>
-    </>
+    <SafeAreaView className="flex-1 items-center justify-center bg-black px-10">
+      <Stack.Screen options={{ title: t('app.name') }} />
+      <Text className="text-white text-xl font-semibold">
+        {t('notFound.title')}
+      </Text>
+      <TVFocusPressable
+        focusKey="not-found-home"
+        onPress={() => router.replace('/')}
+        hasTVPreferredFocus
+        className="mt-4 rounded-md border-white/20 px-6 py-3"
+        focusClassName="border-primary"
+      >
+        <Text className="text-primary text-base font-semibold">
+          {t('notFound.cta')}
+        </Text>
+      </TVFocusPressable>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-});

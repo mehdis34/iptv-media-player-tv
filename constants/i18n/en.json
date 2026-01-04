@@ -1,0 +1,208 @@
+{
+  "app": {
+    "name": "IPTV Media Player"
+  },
+  "common": {
+    "loading": "Loading...",
+    "continue": "Continue",
+    "save": "Save",
+    "add": "Add",
+    "cancel": "Cancel",
+    "close": "Close",
+    "or": "or",
+    "yes": "Yes",
+    "no": "No",
+    "notAvailable": "Not available"
+  },
+  "tabs": {
+    "home": "Home",
+    "live": "Live",
+    "vod": "VOD",
+    "series": "Series",
+    "search": "Search",
+    "settings": "Settings"
+  },
+  "auth": {
+    "addProfile": {
+      "title": "Add Profile",
+      "subtitle": "Enter your Xtream portal details",
+      "cta": "Save Profile",
+      "devPrefill": "Dev: Prefill",
+      "aside": {
+        "title": "TV-first streaming",
+        "subtitle": "Your Xtream portal unlocks live channels, VOD, and series in a single experience.",
+        "highlight1": "Fast start",
+        "highlight2": "Remote ready",
+        "highlight3": "Favorites"
+      }
+    },
+    "selectProfile": {
+      "title": "Who's watching?",
+      "subtitle": "Choose a profile to continue",
+      "empty": "No profiles yet",
+      "addCta": "Add"
+    },
+    "fields": {
+      "name": "Profile name",
+      "host": "Host",
+      "username": "Username",
+      "password": "Password",
+      "avatarSeed": "Avatar seed"
+    },
+    "errors": {
+      "required": "This field is required",
+      "profileInvalid": "We couldn't connect to this portal. Check the information and try again.",
+      "syncFailed": "We couldn't load your data. Please try again."
+    },
+    "status": {
+      "verifying": "Checking profile...",
+      "loadingData": "Loading your data...",
+      "progress": "Step {{current}} of {{total}}"
+    },
+    "sync": {
+      "categories": "Loading categories...",
+      "liveStreams": "Loading live channels...",
+      "vodStreams": "Loading movies...",
+      "series": "Loading series...",
+      "vodDetails": "Loading movie details...",
+      "seriesDetails": "Loading series details...",
+      "epg": "Loading EPG..."
+    }
+  },
+  "settings": {
+    "actions": {
+      "account": "My account",
+      "refresh": "Refresh playlist",
+      "refreshTitle": "Refresh playlist?",
+      "refreshMessage": "This will reload your catalog and EPG.",
+      "refreshConfirm": "Refresh",
+      "noActiveProfileTitle": "No active profile",
+      "noActiveProfileMessage": "Select a profile before refreshing.",
+      "logout": "Sign out",
+      "logoutTitle": "Sign out?",
+      "logoutMessage": "This will remove all profiles and local data.",
+      "logoutConfirm": "Sign out"
+    },
+    "account": {
+      "title": "My account",
+      "sections": {
+        "profile": "Profile",
+        "subscription": "Subscription",
+        "server": "Server"
+      },
+      "fields": {
+        "profileName": "Profile name",
+        "host": "Host",
+        "username": "Username",
+        "status": "Status",
+        "expiration": "Expiration",
+        "trial": "Trial",
+        "activeConnections": "Active connections",
+        "maxConnections": "Max connections",
+        "createdAt": "Created at",
+        "outputFormats": "Output formats",
+        "serverUrl": "Server URL",
+        "serverTime": "Server time",
+        "timezone": "Timezone"
+      },
+      "errors": {
+        "noProfile": "No active profile found.",
+        "loadFailed": "Couldn't load account details."
+      }
+    },
+    "profiles": {
+      "switchTitle": "Profiles",
+      "addCta": "Add profile",
+      "manageCta": "Manage profiles",
+      "manageTitle": "Manage profiles",
+      "editTitle": "Edit profile",
+      "selectAvatarTitle": "Select an avatar",
+      "saveCta": "Save changes",
+      "deleteCta": "Delete profile",
+      "deleteTitle": "Delete profile?",
+      "deleteMessage": "This will remove the profile and its local data.",
+      "empty": "No profiles yet",
+      "notFound": "Profile not found"
+    }
+  },
+  "home": {
+    "rail": {
+      "continueWatching": "Continue Watching",
+      "favorites": "Favorites",
+      "recentlyViewed": "Recently Viewed",
+      "recentVod": "Recently Added Movies",
+      "recentSeries": "Recently Added Series",
+      "recentLive": "Recently Added Live",
+      "seeMoreContinue": "All continue watching",
+      "seeMoreFavorites": "All favorites",
+      "seeMoreRecentlyViewed": "All recently viewed",
+      "seeMoreVod": "All movies",
+      "seeMoreSeries": "All series",
+      "seeMoreLive": "All channels",
+      "seeMore": "See more",
+      "item": "Item"
+    }
+  },
+  "screens": {
+    "home": {
+      "title": "Home",
+      "empty": "Your home rails will appear here"
+    },
+    "live": {
+      "title": "Live",
+      "empty": "Live TV will appear here"
+    },
+    "vod": {
+      "title": "VOD",
+      "empty": "VOD catalog will appear here"
+    },
+    "series": {
+      "title": "Series",
+      "empty": "Series catalog will appear here"
+    },
+    "search": {
+      "title": "Search",
+      "empty": "Search results will appear here"
+    },
+    "settings": {
+      "title": "Settings",
+      "empty": "Settings will appear here"
+    }
+  },
+  "vod": {
+    "actions": {
+      "categories": "Categories",
+      "sort": "Sort",
+      "list": "List",
+      "trailer": "Trailer"
+    },
+    "categories": {
+      "all": "All categories"
+    },
+    "sort": {
+      "recent": "Recently added",
+      "oldest": "Oldest",
+      "az": "A–Z",
+      "za": "Z–A"
+    },
+    "sections": {
+      "featured": "Featured",
+      "all": "All movies"
+    },
+    "details": {
+      "similarTitle": "Similar movies",
+      "similarEmpty": "No similar movies",
+      "trailerUnavailableTooltip": "Trailer unavailable"
+    },
+    "fields": {
+      "releaseDate": "Release date",
+      "genre": "Genre",
+      "casting": "Casting",
+      "synopsis": "Synopsis"
+    }
+  },
+  "notFound": {
+    "title": "This screen doesn't exist",
+    "cta": "Go to home"
+  }
+}

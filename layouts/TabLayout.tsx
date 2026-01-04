@@ -1,26 +1,22 @@
-import { NativeTabs, Label, Icon } from 'expo-router/unstable-native-tabs';
-import { Platform } from 'react-native';
+import {Tabs} from 'expo-router';
 
-import WebTabLayout from './TabLayout.web';
+import {TVTabBar} from '@/components/navigation/TVTabBar';
+import {useI18n} from '@/components/i18n/I18nProvider';
 
 export default function TabLayout() {
-  if (Platform.OS === 'android' && Platform.isTV) {
-    return <WebTabLayout />;
-  }
+  const { t } = useI18n();
+
   return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Label>Home</Label>
-        <Icon sf="house" />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="explore">
-        <Label>Explore</Label>
-        <Icon sf="atom" />
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="tv_focus">
-        <Label>TV demo</Label>
-        <Icon sf="tv.fill" />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <Tabs
+      screenOptions={{ headerShown: false, tabBarPosition: 'left' }}
+      tabBar={(props) => <TVTabBar {...props} />}
+    >
+      <Tabs.Screen name="search" options={{ title: t('tabs.search') }} />
+      <Tabs.Screen name="index" options={{ title: t('tabs.home') }} />
+      <Tabs.Screen name="live" options={{ title: t('tabs.live') }} />
+      <Tabs.Screen name="vod" options={{ title: t('tabs.vod') }} />
+      <Tabs.Screen name="series" options={{ title: t('tabs.series') }} />
+      <Tabs.Screen name="settings" options={{ title: t('tabs.settings') }} />
+    </Tabs>
   );
 }

@@ -1,0 +1,208 @@
+{
+  "app": {
+    "name": "IPTV Media Player"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "continue": "Continuer",
+    "save": "Enregistrer",
+    "add": "Ajouter",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "or": "ou",
+    "yes": "Oui",
+    "no": "Non",
+    "notAvailable": "Indisponible"
+  },
+  "tabs": {
+    "home": "Accueil",
+    "live": "Direct",
+    "vod": "VOD",
+    "series": "Séries",
+    "search": "Recherche",
+    "settings": "Paramètres"
+  },
+  "auth": {
+    "addProfile": {
+      "title": "Ajouter un profil",
+      "subtitle": "Saisissez les informations de votre portail Xtream",
+      "cta": "Connexion",
+      "devPrefill": "[Dev mode] Préremplir",
+      "aside": {
+        "title": "Streaming pensé TV",
+        "subtitle": "Votre portail Xtream donne accès au direct, à la VOD et aux séries dans une seule expérience.",
+        "highlight1": "Démarrage rapide",
+        "highlight2": "Télécommande prête",
+        "highlight3": "Favoris"
+      }
+    },
+    "selectProfile": {
+      "title": "Qui regarde ?",
+      "subtitle": "Choisissez un profil pour continuer",
+      "empty": "Aucun profil pour le moment",
+      "addCta": "Ajouter un profil"
+    },
+    "fields": {
+      "name": "Nom du profil",
+      "host": "Hôte",
+      "username": "Nom d'utilisateur",
+      "password": "Mot de passe",
+      "avatarSeed": "Avatar"
+    },
+    "errors": {
+      "required": "Ce champ est requis",
+      "profileInvalid": "Connexion impossible. Vérifiez les informations du portail et réessayez.",
+      "syncFailed": "Impossible de charger les données. Veuillez réessayer."
+    },
+    "status": {
+      "verifying": "Vérification du profil...",
+      "loadingData": "Chargement des données...",
+      "progress": "Étape {{current}} sur {{total}}"
+    },
+    "sync": {
+      "categories": "Chargement des catégories...",
+      "liveStreams": "Chargement des chaînes...",
+      "vodStreams": "Chargement des films...",
+      "series": "Chargement des séries...",
+      "vodDetails": "Chargement des détails des films...",
+      "seriesDetails": "Chargement des détails des séries...",
+      "epg": "Chargement de l'EPG..."
+    }
+  },
+  "settings": {
+    "actions": {
+      "account": "Mon compte",
+      "refresh": "Rafraîchir la playlist",
+      "refreshTitle": "Rafraîchir la playlist ?",
+      "refreshMessage": "Cela rechargera le catalogue et l'EPG.",
+      "refreshConfirm": "Rafraîchir",
+      "noActiveProfileTitle": "Aucun profil actif",
+      "noActiveProfileMessage": "Sélectionnez un profil avant de rafraîchir.",
+      "logout": "Se déconnecter",
+      "logoutTitle": "Se déconnecter ?",
+      "logoutMessage": "Tous les profils et données locales seront supprimés.",
+      "logoutConfirm": "Se déconnecter"
+    },
+    "account": {
+      "title": "Mon compte",
+      "sections": {
+        "profile": "Profil",
+        "subscription": "Abonnement",
+        "server": "Serveur"
+      },
+      "fields": {
+        "profileName": "Nom du profil",
+        "host": "Hôte",
+        "username": "Nom d'utilisateur",
+        "status": "Statut",
+        "expiration": "Expiration",
+        "trial": "Essai",
+        "activeConnections": "Connexions actives",
+        "maxConnections": "Connexions max",
+        "createdAt": "Créé le",
+        "outputFormats": "Formats de sortie",
+        "serverUrl": "URL serveur",
+        "serverTime": "Heure serveur",
+        "timezone": "Fuseau horaire"
+      },
+      "errors": {
+        "noProfile": "Aucun profil actif trouvé.",
+        "loadFailed": "Impossible de charger les détails du compte."
+      }
+    },
+    "profiles": {
+      "switchTitle": "Profils",
+      "addCta": "Ajouter",
+      "manageCta": "Gérer les profils",
+      "manageTitle": "Gestion des profils",
+      "editTitle": "Modifier le profil",
+      "selectAvatarTitle": "Sélectionner un avatar",
+      "saveCta": "Enregistrer",
+      "deleteCta": "Supprimer le profil",
+      "deleteTitle": "Supprimer le profil ?",
+      "deleteMessage": "Le profil et ses données locales seront supprimés.",
+      "empty": "Aucun profil pour le moment",
+      "notFound": "Profil introuvable"
+    }
+  },
+  "home": {
+    "rail": {
+      "continueWatching": "Continuer la lecture",
+      "favorites": "Favoris",
+      "recentlyViewed": "Récemment consultés",
+      "recentVod": "Films récemment ajoutés",
+      "recentSeries": "Séries récemment ajoutées",
+      "recentLive": "En cours de diffusion",
+      "seeMoreContinue": "Tout reprendre",
+      "seeMoreFavorites": "Tous les favoris",
+      "seeMoreRecentlyViewed": "Tous les récents",
+      "seeMoreVod": "Tous les films",
+      "seeMoreSeries": "Toutes les séries",
+      "seeMoreLive": "Toutes les chaînes",
+      "seeMore": "Voir plus",
+      "item": "Élément"
+    }
+  },
+  "screens": {
+    "home": {
+      "title": "Accueil",
+      "empty": "Vos rails d'accueil apparaîtront ici"
+    },
+    "live": {
+      "title": "Direct",
+      "empty": "Le direct apparaîtra ici"
+    },
+    "vod": {
+      "title": "Films",
+      "empty": "Le catalogue VOD apparaîtra ici"
+    },
+    "series": {
+      "title": "Séries",
+      "empty": "Le catalogue séries apparaîtra ici"
+    },
+    "search": {
+      "title": "Recherche",
+      "empty": "Les résultats de recherche apparaîtront ici"
+    },
+    "settings": {
+      "title": "Paramètres",
+      "empty": "Les paramètres apparaîtront ici"
+    }
+  },
+  "vod": {
+    "actions": {
+      "categories": "Catégories",
+      "sort": "Tri",
+      "list": "Liste",
+      "trailer": "Bande annonce"
+    },
+    "categories": {
+      "all": "Toutes les catégories"
+    },
+    "sort": {
+      "recent": "Récents",
+      "oldest": "Anciens",
+      "az": "De A à Z",
+      "za": "De Z à A"
+    },
+    "sections": {
+      "featured": "À la une",
+      "all": "Tous les films"
+    },
+    "details": {
+      "similarTitle": "Films similaires",
+      "similarEmpty": "Aucun film similaire",
+      "trailerUnavailableTooltip": "Bande annonce non-diponible"
+    },
+    "fields": {
+      "releaseDate": "Date de sortie",
+      "genre": "Genre",
+      "casting": "Casting",
+      "synopsis": "Synopsis"
+    }
+  },
+  "notFound": {
+    "title": "Cet écran n'existe pas",
+    "cta": "Aller à l'accueil"
+  }
+}

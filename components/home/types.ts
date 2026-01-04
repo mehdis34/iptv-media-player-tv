@@ -1,0 +1,26 @@
+import type { TranslationKey } from '@/constants/i18n';
+
+export type HomeItemType = 'live' | 'vod' | 'series';
+
+export type HomeContentItem = {
+  id: string;
+  title: string;
+  image: string | null;
+  type: HomeItemType;
+  epgChannelId?: string | null;
+  epgTitle?: string | null;
+  epgProgress?: number | null;
+};
+
+export type HomeRailKind = 'poster' | 'live';
+
+export type HomeSeeMoreRoute = '/(tabs)/live' | '/(tabs)/vod' | '/(tabs)/series';
+
+export type HomeRail = {
+  id: string;
+  titleKey: TranslationKey;
+  items: HomeContentItem[];
+  seeMoreLabelKey: TranslationKey;
+  seeMoreRoute: HomeSeeMoreRoute;
+  seeMoreKind: HomeRailKind;
+};
