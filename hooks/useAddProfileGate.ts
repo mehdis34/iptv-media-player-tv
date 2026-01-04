@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
+import type { Href } from 'expo-router';
 
 import { usePortalStore } from '@/hooks/usePortalStore';
 import { getProfiles } from '@/storage/profiles';
 
 type GateState = {
   status: 'loading' | 'ready';
-  target: string | null;
+  target: Href | null;
 };
 
 export const useAddProfileGate = (allowExisting: boolean): GateState => {
@@ -21,7 +22,7 @@ export const useAddProfileGate = (allowExisting: boolean): GateState => {
     const run = async () => {
       const profiles = await getProfiles();
       const count = profiles.length;
-      let target: string | null = null;
+      let target: Href | null = null;
 
       if (!allowExisting) {
         if (count === 1) {

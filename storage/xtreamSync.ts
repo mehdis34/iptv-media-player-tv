@@ -67,9 +67,6 @@ export const syncXtreamProfileData = async (
 
   report('auth.sync.epg');
   const epgPayload = await fetchXmltvEpg(profile);
-  if (__DEV__) {
-    console.log('[sync] epg payload', JSON.stringify(epgPayload, null, 2));
-  }
   await storeEpg(profile.id, epgPayload);
 
   await setCatalogMeta(profile.id, 'catalog_updated_at', String(Date.now()));

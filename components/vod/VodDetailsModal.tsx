@@ -197,7 +197,7 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
             ) : null}
             <LinearGradient
               className="absolute inset-0"
-              colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.4)']}
+              colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.2)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             />
@@ -257,24 +257,21 @@ export function VodDetailsModal({ visible, item, onClose }: VodDetailsModalProps
                     </TVFocusPressable>
                     {hasTrailer && (
                       <TVFocusPressable
-                        focusKey={'vod-details-trailer'}
                         onPress={handleOpenTrailer}
                         unstyled
-                        className={'group items-center rounded-lg bg-white/10 py-2 px-6'}
+                        className="group items-center flex flex-row justify-between rounded-lg bg-white/10 py-2 px-6 gap-2"
                         focusClassName={'bg-primary'}
                       >
-                        <View className={'flex-row items-center gap-2'}>
-                          <FontAwesome
-                            name={'youtube-play'}
-                            className={'text-primary group-focus:text-white'}
-                            size={18}
-                          />
-                          <Text
-                            className={'text-base font-semibold text-white group-focus:text-white'}
-                          >
-                            {t('vod.actions.trailer')}
-                          </Text>
-                        </View>
+                        <FontAwesome
+                          name={'youtube-play'}
+                          className="text-white group-focus:"
+                          size={24}
+                        />
+                        <Text
+                          className={'text-base font-semibold text-white group-focus:text-white'}
+                        >
+                          {t('vod.actions.trailer')}
+                        </Text>
                       </TVFocusPressable>
                     )}
                   </View>
