@@ -3,7 +3,8 @@ const path = require('path');
 
 const filePath = path.join(__dirname, '..', 'node_modules', 'react-native-vlc-media-player', 'expo', 'android', 'withGradleTasks.js');
 const androidGradlePath = path.join(__dirname, '..', 'android', 'app', 'build.gradle');
-const anchorOld = /anchor: \/applyNativeModulesAppBuildGradle\\(project\\)/i;
+const anchorOld = 'anchor: /applyNativeModulesAppBuildGradle\\(project\\)/i';
+const anchorOldWithComma = `${anchorOld},`;
 const anchorNew = 'anchor: /apply plugin: "com\\.facebook\\.react"/i,';
 const lockBlockOld = `java.nio.file.Path notNeededDirectory = it.externalLibNativeLibs
                             .getFiles()
@@ -33,9 +34,14 @@ const lockBlockNew = `java.nio.file.Path notNeededDirectory = it.externalLibNati
 
 try {
   let content = fs.readFileSync(filePath, 'utf8');
-  if (anchorOld.test(content) && !content.includes(anchorNew)) {
-    content = content.replace(anchorOld, anchorNew);
-    console.log('✅ Applied VLC plugin gradle anchor patch');
+  if (!content.includes(anchorNew)) {
+    if (content.includes(anchorOldWithComma)) {
+      content = content.replace(anchorOldWithComma, anchorNew);
+      console.log('✅ Applied VLC plugin gradle anchor patch');
+    } else if (content.includes(anchorOld)) {
+      content = content.replace(anchorOld, anchorNew);
+      console.log('✅ Applied VLC plugin gradle anchor patch');
+    }
   }
   if (content.includes(lockBlockOld) && !content.includes(lockBlockNew)) {
     content = content.replace(lockBlockOld, lockBlockNew);

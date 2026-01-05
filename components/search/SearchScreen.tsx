@@ -135,7 +135,7 @@ export function SearchScreen() {
   const handleLivePress = useCallback(
     (item: HomeContentItem) => {
       router.push({
-        pathname: '/player/[id]',
+        pathname: '/player/[id]' as any,
         params: {
           id: item.id,
           type: 'live',
