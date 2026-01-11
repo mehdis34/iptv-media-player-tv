@@ -266,6 +266,11 @@
     }
   },
   "player": {
+    "channels": {
+      "title": "Toutes les chaînes",
+      "loading": "Chargement des chaînes...",
+      "empty": "Aucune chaîne disponible."
+    },
     "status": {
       "loading": "Préparation du flux..."
     },

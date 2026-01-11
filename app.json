@@ -17,6 +17,7 @@
           }
         }
       ],
+      "./plugins/with-keyevent",
       "expo-router",
       "expo-font",
       [

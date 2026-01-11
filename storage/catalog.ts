@@ -739,6 +739,28 @@ export const getLivePage = async (
   }));
 };
 
+export const getLiveChannelOffset = async (
+  profileId: string,
+  streamId: string,
+): Promise<number | null> => {
+  const db = getDb();
+  const target = await db.getFirstAsync<{ rowid: number }>(
+    'SELECT rowid FROM live_streams WHERE profile_id = ? AND stream_id = ?;',
+    [profileId, streamId],
+  );
+  if (!target?.rowid) {
+    return null;
+  }
+  const row = await db.getFirstAsync<{ offset: number }>(
+    'SELECT COUNT(*) as offset FROM live_streams WHERE profile_id = ? AND rowid < ?;',
+    [profileId, target.rowid],
+  );
+  if (!row || row.offset == null) {
+    return null;
+  }
+  return Number(row.offset);
+};
+
 export type VodSortKey = 'recent' | 'oldest' | 'az' | 'za';
 
 export const getVodPage = async (

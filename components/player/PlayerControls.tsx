@@ -44,6 +44,8 @@ type PlayerControlsProps = {
   duration: number;
   liveProgress?: number | null;
   liveTimeRange?: string | null;
+  onAnyFocus?: () => void;
+  onAnyPress?: () => void;
   upNextLabel?: string;
   upNextItems?: Array<{
     id: string;
@@ -98,6 +100,7 @@ export function PlayerControls({
   isPaused,
   currentTime,
   duration,
+  onAnyFocus,
   onTogglePlay,
   onJumpBack,
   onJumpForward,
@@ -108,6 +111,7 @@ export function PlayerControls({
   isFavorite,
   onToggleFavorite,
   labels,
+  onAnyPress,
   liveProgress,
   liveTimeRange,
   upNextLabel,
@@ -151,7 +155,11 @@ export function PlayerControls({
         <View className="flex-row items-center gap-3">
           <TVFocusPressable
             focusKey="player-favorite"
-            onPress={onToggleFavorite}
+            onPress={() => {
+              onAnyPress?.();
+              onToggleFavorite();
+            }}
+            onFocus={onAnyFocus}
             unstyled
             className="h-12 w-12 items-center justify-center rounded-full bg-white/10"
             focusClassName="bg-primary"
@@ -165,7 +173,11 @@ export function PlayerControls({
           </TVFocusPressable>
           <TVFocusPressable
             focusKey="player-tracks"
-            onPress={onShowTracks}
+            onPress={() => {
+              onAnyPress?.();
+              onShowTracks();
+            }}
+            onFocus={onAnyFocus}
             unstyled
             className="h-12 w-12 items-center justify-center rounded-full bg-white/10"
             focusClassName="bg-primary"
@@ -176,7 +188,11 @@ export function PlayerControls({
           {onShowEpisodes ? (
             <TVFocusPressable
               focusKey="player-episodes"
-              onPress={onShowEpisodes}
+              onPress={() => {
+                onAnyPress?.();
+                onShowEpisodes();
+              }}
+              onFocus={onAnyFocus}
               unstyled
               className="h-12 w-12 items-center justify-center rounded-full bg-white/10"
               focusClassName="bg-primary"
@@ -188,7 +204,11 @@ export function PlayerControls({
           {onShowSeasons ? (
             <TVFocusPressable
               focusKey="player-seasons"
-              onPress={onShowSeasons}
+              onPress={() => {
+                onAnyPress?.();
+                onShowSeasons();
+              }}
+              onFocus={onAnyFocus}
               unstyled
               className="h-12 w-12 items-center justify-center rounded-full bg-white/10"
               focusClassName="bg-primary"
@@ -230,7 +250,11 @@ export function PlayerControls({
           {isLive ? null : (
             <TVFocusPressable
               focusKey="player-jump-back"
-              onPress={onJumpBack}
+              onPress={() => {
+                onAnyPress?.();
+                onJumpBack();
+              }}
+              onFocus={onAnyFocus}
               unstyled
               className="h-14 w-14 items-center justify-center rounded-full bg-white/10"
               focusClassName="bg-primary"
@@ -242,7 +266,11 @@ export function PlayerControls({
           {isLive ? null : (
             <TVFocusPressable
               focusKey="player-toggle"
-              onPress={onTogglePlay}
+              onPress={() => {
+                onAnyPress?.();
+                onTogglePlay();
+              }}
+              onFocus={onAnyFocus}
               unstyled
               className="h-20 w-20 items-center justify-center rounded-full bg-white/10"
               focusClassName="bg-primary"
@@ -258,7 +286,11 @@ export function PlayerControls({
           {isLive ? null : (
             <TVFocusPressable
               focusKey="player-jump-forward"
-              onPress={onJumpForward}
+              onPress={() => {
+                onAnyPress?.();
+                onJumpForward();
+              }}
+              onFocus={onAnyFocus}
               unstyled
               className="h-14 w-14 items-center justify-center rounded-full bg-white/10"
               focusClassName="bg-primary"
@@ -286,8 +318,12 @@ export function PlayerControls({
                   {item.image ? (
                     <TVFocusPressable
                       focusKey={`player-upnext-${item.id}`}
-                      onPress={() => onSelectUpcoming?.(item.id)}
+                      onPress={() => {
+                        onAnyPress?.();
+                        onSelectUpcoming?.(item.id);
+                      }}
                       onFocus={() => {
+                        onAnyFocus?.();
                         if (index > lastUpNextIndexRef.current) {
                           upNextRef.current?.scrollToIndex({
                             index,

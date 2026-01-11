@@ -1,18 +1,22 @@
 import { StatusBar } from 'expo-status-bar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Text, View } from 'react-native';
+import { BackHandler, Text, View, useTVEventHandler } from 'react-native';
+import KeyEvent from 'react-native-keyevent';
 
 import { TVFocusProvider } from '@/components/focus/TVFocusProvider';
 import { TVFocusPressable } from '@/components/focus/TVFocusPressable';
 import { useI18n } from '@/components/i18n/I18nProvider';
 import { PlayerControls } from '@/components/player/PlayerControls';
-import {
-  PlayerEpisodesModal,
-  type EpisodeEntry,
-} from '@/components/player/PlayerEpisodesModal';
+import { PlayerEpisodesModal, type EpisodeEntry } from '@/components/player/PlayerEpisodesModal';
+import { PlayerChannelModal } from '@/components/player/PlayerChannelModal';
 import { PlayerTracksModal } from '@/components/player/PlayerTracksModal';
-import { usePlayerSource, type PlayerRouteParams, type PlayerType } from '@/components/player/usePlayerSource';
+import {
+  usePlayerSource,
+  type PlayerRouteParams,
+  type PlayerType,
+} from '@/components/player/usePlayerSource';
+import { useLiveChannelsList } from '@/components/player/useLiveChannelsList';
 import { useVlcPlayback } from '@/components/player/useVlcPlayback';
 import { VLCPlayer } from '@/components/ui/VlcPlayer';
 import { useFavoriteStatus } from '@/hooks/useFavoriteStatus';
@@ -28,6 +32,7 @@ import { useSeriesDetails } from '@/components/series/useSeriesDetails';
 import {
   getEpgListingsForChannels,
   getLiveItemsByIds,
+  type HomeCatalogItem,
   type HomeEpgListing,
 } from '@/storage/catalog';
 import { applyLiveEpg } from '@/components/epg/applyLiveEpg';
@@ -154,6 +159,11 @@ export function PlayerScreen() {
   const [tracksVisible, setTracksVisible] = useState(false);
   const [episodesVisible, setEpisodesVisible] = useState(false);
   const [seasonPickerVisible, setSeasonPickerVisible] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideControlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const controlsVisibleRef = useRef(true);
+  const [channelsVisible, setChannelsVisible] = useState(false);
+  const channelsVisibleRef = useRef(false);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
   const [returnToEpisodes, setReturnToEpisodes] = useState(false);
   const [liveEpg, setLiveEpg] = useState<{
@@ -165,62 +175,81 @@ export function PlayerScreen() {
   const { status, streamUrl, error: sourceError } = usePlayerSource(routeParams, reloadKey);
 
   const sourceKey = `${routeParams.type}-${routeParams.id ?? 'unknown'}-${reloadKey}`;
-  const { playerRef, state, togglePlay, jumpBy, handleProgress, handleLoad, handlePlaying, handlePaused, handleEnd, handleError, setSelectedAudio, setSelectedText, playerProps } =
-    useVlcPlayback({
-      sourceKey,
-      onProgress: (currentTime, duration) => {
-        if (!activeProfileId) {
-          return;
-        }
-        const itemType = routeParams.type;
-        const itemId =
-          itemType === 'series' ? routeParams.seriesId ?? routeParams.id : routeParams.id;
-        if (!itemId || duration <= 0 || currentTime <= 0) {
-          return;
-        }
-        if (!hasMarkedViewedRef.current && currentTime >= 2) {
-          hasMarkedViewedRef.current = true;
-          addRecentlyViewed(activeProfileId, itemType, itemId).then(() => bumpLibrary());
-        }
-        if (routeParams.type === 'live') {
-          return;
-        }
-        if (currentTime < 60) {
-          return;
-        }
-        const progress = currentTime / duration;
-        const now = Date.now();
-        if (progress >= 0.95) {
-          removeContinueWatching(activeProfileId, itemType, itemId).then(() => bumpLibrary());
-          return;
-        }
-        if (now - lastLibraryUpdateRef.current < 5000) {
-          return;
-        }
-        lastLibraryUpdateRef.current = now;
-        upsertContinueWatching(activeProfileId, itemType, itemId, currentTime, duration).then(() =>
-          bumpLibrary(),
-        );
-      },
-      onEnd: () => {
-        if (routeParams.type !== 'series') {
-          router.back();
-          return;
-        }
-        if (nextEpisode?.episodeId) {
-          handlePlayEpisode(nextEpisode);
-          return;
-        }
-        if (nextSeasonEpisode?.episodeId) {
-          handlePlayEpisode(nextSeasonEpisode);
-          return;
-        }
+  const {
+    playerRef,
+    state,
+    togglePlay,
+    jumpBy,
+    handleProgress,
+    handleLoad,
+    handlePlaying,
+    handlePaused,
+    handleEnd,
+    handleError,
+    setSelectedAudio,
+    setSelectedText,
+    playerProps,
+  } = useVlcPlayback({
+    sourceKey,
+    onProgress: (currentTime, duration) => {
+      if (!activeProfileId) {
+        return;
+      }
+      const itemType = routeParams.type;
+      const itemId =
+        itemType === 'series' ? (routeParams.seriesId ?? routeParams.id) : routeParams.id;
+      if (!itemId || duration <= 0 || currentTime <= 0) {
+        return;
+      }
+      if (!hasMarkedViewedRef.current && currentTime >= 2) {
+        hasMarkedViewedRef.current = true;
+        addRecentlyViewed(activeProfileId, itemType, itemId).then(() => bumpLibrary());
+      }
+      if (routeParams.type === 'live') {
+        return;
+      }
+      if (currentTime < 60) {
+        return;
+      }
+      const progress = currentTime / duration;
+      const now = Date.now();
+      if (progress >= 0.95) {
+        removeContinueWatching(activeProfileId, itemType, itemId).then(() => bumpLibrary());
+        return;
+      }
+      if (now - lastLibraryUpdateRef.current < 5000) {
+        return;
+      }
+      lastLibraryUpdateRef.current = now;
+      upsertContinueWatching(activeProfileId, itemType, itemId, currentTime, duration).then(() =>
+        bumpLibrary(),
+      );
+    },
+    onEnd: () => {
+      if (routeParams.type !== 'series') {
         router.back();
-      },
-      onError: () => {
-        setPlaybackError(true);
-      },
-    });
+        return;
+      }
+      if (nextEpisode?.episodeId) {
+        handlePlayEpisode(nextEpisode);
+        return;
+      }
+      if (nextSeasonEpisode?.episodeId) {
+        handlePlayEpisode(nextSeasonEpisode);
+        return;
+      }
+      router.back();
+    },
+    onError: () => {
+      setPlaybackError(true);
+    },
+  });
+
+  const isLive = routeParams.type === 'live';
+  const isSeries = routeParams.type === 'series';
+
+  const liveChannels = useLiveChannelsList(isLive && channelsVisible, routeParams.id ?? null);
+  const liveChannelItems = liveChannels?.items ?? [];
 
   useEffect(() => {
     setPlaybackError(false);
@@ -229,9 +258,113 @@ export function PlayerScreen() {
     lastLibraryUpdateRef.current = 0;
   }, [streamUrl]);
 
+  useEffect(() => {
+    controlsVisibleRef.current = controlsVisible;
+  }, [controlsVisible]);
 
-  const isLive = routeParams.type === 'live';
-  const isSeries = routeParams.type === 'series';
+  useEffect(() => {
+    channelsVisibleRef.current = channelsVisible;
+  }, [channelsVisible]);
+
+  const scheduleControlsHide = useCallback((forceVisible: boolean) => {
+    if (hideControlsTimerRef.current) {
+      clearTimeout(hideControlsTimerRef.current);
+    }
+    if (forceVisible && !controlsVisibleRef.current) {
+      setControlsVisible(true);
+    }
+    hideControlsTimerRef.current = setTimeout(() => {
+      setControlsVisible(false);
+    }, 3000);
+  }, []);
+
+  const handleControlsFocus = useCallback(() => {
+    scheduleControlsHide(false);
+  }, [scheduleControlsHide]);
+
+  const handleControlsPress = useCallback(() => {
+    scheduleControlsHide(true);
+  }, [scheduleControlsHide]);
+
+  const handleControlsBack = useCallback(() => {
+    if (channelsVisibleRef.current) {
+      setChannelsVisible(false);
+      return;
+    }
+    if (controlsVisibleRef.current) {
+      setControlsVisible(false);
+      return;
+    }
+    router.back();
+  }, [router]);
+
+  useEffect(() => {
+    if (!streamUrl) {
+      return;
+    }
+    scheduleControlsHide(true);
+    return () => {
+      if (hideControlsTimerRef.current) {
+        clearTimeout(hideControlsTimerRef.current);
+      }
+    };
+  }, [scheduleControlsHide, streamUrl]);
+
+  useTVEventHandler((event) => {
+    if (event.eventType === 'select') {
+      scheduleControlsHide(true);
+    }
+  });
+
+  useEffect(() => {
+    const handleKeyDown = (event: { keyCode: number }) => {
+      const keyCode = event?.keyCode ?? -1;
+      if (keyCode === 23 || keyCode === 66) {
+        scheduleControlsHide(true);
+        return;
+      }
+      if (keyCode === 19 || keyCode === 20 || keyCode === 21 || keyCode === 22) {
+        if (channelsVisibleRef.current) {
+          return;
+        }
+        if (isLive && !controlsVisibleRef.current) {
+          handleOpenChannels();
+          return;
+        }
+        if (controlsVisibleRef.current) {
+          scheduleControlsHide(false);
+        }
+        return;
+      }
+      if (keyCode === 4) {
+        if (channelsVisibleRef.current) {
+          setChannelsVisible(false);
+          return;
+        }
+        handleControlsBack();
+      }
+    };
+
+    KeyEvent.onKeyDownListener(handleKeyDown);
+    return () => {
+      KeyEvent.removeKeyDownListener();
+    };
+  }, [handleControlsBack, handleOpenChannels, isLive, liveChannelItems, scheduleControlsHide]);
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (channelsVisibleRef.current) {
+        setChannelsVisible(false);
+        return true;
+      }
+      if (controlsVisibleRef.current) {
+        setControlsVisible(false);
+        return true;
+      }
+      return false;
+    });
+    return () => subscription.remove();
+  }, []);
 
   const seriesId = routeParams.seriesId ?? null;
   const { info: seriesInfo } = useSeriesDetails(isSeries ? seriesId : null, { mode: 'fetch' });
@@ -269,7 +402,8 @@ export function PlayerScreen() {
   }, [isLive]);
 
   useEffect(() => {
-    if (!isLive || !activeProfileId || !routeParams.id) {
+    const channelId = routeParams.id;
+    if (!isLive || !activeProfileId || !channelId) {
       setLiveEpg({ current: null, upcoming: [] });
       return;
     }
@@ -277,9 +411,9 @@ export function PlayerScreen() {
     let isCancelled = false;
     const run = async () => {
       try {
-        const liveItems = await getLiveItemsByIds(activeProfileId, [routeParams.id]);
-        const fallbackItem = {
-          id: routeParams.id,
+        const liveItems = await getLiveItemsByIds(activeProfileId, [channelId]);
+        const fallbackItem: HomeCatalogItem = {
+          id: channelId,
           title: routeParams.name ?? '',
           image: routeParams.icon ?? null,
           type: 'live' as const,
@@ -291,17 +425,19 @@ export function PlayerScreen() {
           const [mapped] = await applyLiveEpg(activeProfileId, [liveItem]);
           resolved = mapped ?? resolved;
         }
-        const channelId = resolved.epgChannelId ?? null;
-        if (!channelId) {
+        const epgChannelId = resolved.epgChannelId ?? null;
+        if (!epgChannelId) {
           if (!isCancelled) {
             setLiveEpg({ current: null, upcoming: [] });
           }
           return;
         }
-        const listings = await getEpgListingsForChannels(activeProfileId, [channelId]);
+        const listings = await getEpgListingsForChannels(activeProfileId, [epgChannelId]);
         const sorted = listings
           .slice()
-          .sort((a, b) => (parseXmltvTimestamp(a.start) ?? 0) - (parseXmltvTimestamp(b.start) ?? 0));
+          .sort(
+            (a, b) => (parseXmltvTimestamp(a.start) ?? 0) - (parseXmltvTimestamp(b.start) ?? 0),
+          );
         const now = Date.now();
         const current =
           sorted.find((listing) => {
@@ -361,14 +497,17 @@ export function PlayerScreen() {
     });
   }, [activeSeasonId, episodesBySeason, t]);
 
-  const episodesById = useMemo(() => new Map(episodes.map((episode) => [episode.id, episode])), [episodes]);
+  const episodesById = useMemo(
+    () => new Map(episodes.map((episode) => [episode.id, episode])),
+    [episodes],
+  );
   const currentEpisodeIndex = useMemo(() => {
     if (!routeParams.id) {
       return -1;
     }
     return episodes.findIndex((episode) => episode.episodeId === routeParams.id);
   }, [episodes, routeParams.id]);
-  const nextEpisode = currentEpisodeIndex >= 0 ? episodes[currentEpisodeIndex + 1] ?? null : null;
+  const nextEpisode = currentEpisodeIndex >= 0 ? (episodes[currentEpisodeIndex + 1] ?? null) : null;
   const nextSeasonEpisode = useMemo(() => {
     if (!activeSeasonId) {
       return null;
@@ -419,9 +558,7 @@ export function PlayerScreen() {
   );
 
   const favoriteId =
-    routeParams.type === 'series'
-      ? routeParams.seriesId ?? routeParams.id
-      : routeParams.id;
+    routeParams.type === 'series' ? (routeParams.seriesId ?? routeParams.id) : routeParams.id;
   const { isFavorite, toggleFavorite } = useFavoriteStatus(
     routeParams.type === 'live' ? 'live' : routeParams.type === 'series' ? 'series' : 'vod',
     favoriteId,
@@ -467,6 +604,27 @@ export function PlayerScreen() {
       setEpisodesVisible(true);
     }
   }, [returnToEpisodes]);
+
+  const handleOpenChannels = useCallback(() => {
+    if (!isLive) {
+      return;
+    }
+    setControlsVisible(false);
+    setChannelsVisible(true);
+  }, [isLive]);
+
+  const handleSelectChannel = useCallback(
+    (item: { id: string; title: string; image?: string | null }) => {
+      setChannelsVisible(false);
+      router.setParams({
+        id: item.id,
+        type: 'live',
+        name: item.title,
+        icon: item.image ?? undefined,
+      });
+    },
+    [router],
+  );
 
   useEffect(() => {
     if (!routeParams.start || routeParams.type === 'live') {
@@ -544,9 +702,9 @@ export function PlayerScreen() {
   const title = routeParams.name ?? '';
   const subtitle =
     isSeries && currentEpisodeIndex >= 0
-      ? episodes[currentEpisodeIndex]?.title ?? null
+      ? (episodes[currentEpisodeIndex]?.title ?? null)
       : isLive
-        ? liveEpg.current?.title ?? null
+        ? (liveEpg.current?.title ?? null)
         : null;
   const artwork = routeParams.icon ?? null;
   const liveProgress = liveEpg.current
@@ -583,31 +741,48 @@ export function PlayerScreen() {
           className="flex-1"
           {...playerProps}
         />
-        <TVFocusProvider initialFocusKey="player-toggle">
-          <PlayerControls
-            title={title}
-            subtitle={subtitle}
-            artwork={artwork}
-            isLive={isLive}
-            isPaused={state.paused}
-            currentTime={state.currentTime}
-            duration={state.duration}
-            onTogglePlay={togglePlay}
-            onJumpBack={() => jumpBy(-10)}
-            onJumpForward={() => jumpBy(10)}
-            onShowTracks={() => setTracksVisible(true)}
-            onShowEpisodes={isSeries ? handleOpenEpisodes : undefined}
-            onShowSeasons={isSeries ? handleOpenSeasons : undefined}
-            onBack={() => router.back()}
-            isFavorite={isFavorite}
-            onToggleFavorite={toggleFavorite}
-            labels={labels}
-            liveProgress={isLive ? liveProgress : null}
-            liveTimeRange={isLive ? liveTimeRange : null}
-            upNextLabel={isLive ? t('player.labels.upNext') : undefined}
-            upNextItems={isLive ? upNextItems : undefined}
-            onSelectUpcoming={() => {}}
+        <TVFocusProvider
+          initialFocusKey={
+            channelsVisible ? null : controlsVisible ? 'player-toggle' : 'player-surface'
+          }
+        >
+          <TVFocusPressable
+            focusKey="player-surface"
+            focusable={!controlsVisible && !channelsVisible}
+            pointerEvents={controlsVisible || channelsVisible ? 'none' : 'auto'}
+            onPress={handleControlsPress}
+            unstyled
+            className="absolute inset-0"
+            focusClassName="border-2 border-primary"
           />
+          {controlsVisible ? (
+            <PlayerControls
+              title={title}
+              subtitle={subtitle}
+              artwork={artwork}
+              isLive={isLive}
+              isPaused={state.paused}
+              currentTime={state.currentTime}
+              duration={state.duration}
+              onTogglePlay={togglePlay}
+              onJumpBack={() => jumpBy(-10)}
+              onJumpForward={() => jumpBy(10)}
+              onShowTracks={() => setTracksVisible(true)}
+              onShowEpisodes={isSeries ? handleOpenEpisodes : undefined}
+              onShowSeasons={isSeries ? handleOpenSeasons : undefined}
+              onBack={handleControlsBack}
+              isFavorite={isFavorite}
+              onToggleFavorite={toggleFavorite}
+              labels={labels}
+              onAnyFocus={handleControlsFocus}
+              onAnyPress={handleControlsPress}
+              liveProgress={isLive ? liveProgress : null}
+              liveTimeRange={isLive ? liveTimeRange : null}
+              upNextLabel={isLive ? t('player.labels.upNext') : undefined}
+              upNextItems={isLive ? upNextItems : undefined}
+              onSelectUpcoming={() => {}}
+            />
+          ) : null}
         </TVFocusProvider>
       </View>
 
@@ -667,6 +842,21 @@ export function PlayerScreen() {
             }
           }}
           onClose={handleCloseSeasonPicker}
+        />
+      ) : null}
+
+      {isLive ? (
+        <PlayerChannelModal
+          visible={channelsVisible}
+          channels={liveChannels.items}
+          status={liveChannels.status}
+          activeChannelId={routeParams.id ?? null}
+          hasMore={liveChannels.hasMore}
+          isLoadingMore={liveChannels.isLoadingMore}
+          startIndex={liveChannels.startIndex}
+          onLoadMore={liveChannels.loadMore}
+          onSelect={handleSelectChannel}
+          onClose={() => setChannelsVisible(false)}
         />
       ) : null}
     </View>
