@@ -276,14 +276,15 @@
     },
     "labels": {
       "live": "En direct",
-      "track": "Piste"
+      "track": "Piste",
+      "upNext": "À venir",
+      "noInfo": "Aucune information"
     },
     "actions": {
       "play": "Lecture",
       "pause": "Pause",
       "jumpBack": "Reculer 10s",
       "jumpForward": "Avancer 10s",
-      "jumpLive": "Revenir au direct",
       "tracks": "Audio et sous-titres",
       "audio": "Audio",
       "subtitles": "Sous-titres",

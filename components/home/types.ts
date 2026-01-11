@@ -19,8 +19,7 @@ export type HomeRailKind = 'poster' | 'live';
 export type HomeSeeMoreRoute =
   | '/(tabs)/live'
   | '/(tabs)/vod'
-  | '/(tabs)/series'
-  | '/(tabs)/favorites';
+  | '/(tabs)/series';
 
 export type HomeRail = {
   id: string;

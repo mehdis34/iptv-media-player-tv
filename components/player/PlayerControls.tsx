@@ -1,5 +1,5 @@
-import { Text, View } from 'react-native';
-import { useMemo } from 'react';
+import { FlatList, Text, View } from 'react-native';
+import { useMemo, useRef } from 'react';
 
 import { TVFocusPressable } from '@/components/focus/TVFocusPressable';
 import { MaterialIcons } from '@/components/ui/Icons';
@@ -42,10 +42,21 @@ type PlayerControlsProps = {
   isPaused: boolean;
   currentTime: number;
   duration: number;
+  liveProgress?: number | null;
+  liveTimeRange?: string | null;
+  upNextLabel?: string;
+  upNextItems?: Array<{
+    id: string;
+    title: string;
+    timeRange?: string | null;
+    durationLabel?: string | null;
+    image?: string | null;
+    description?: string | null;
+  }>;
+  onSelectUpcoming?: (itemId: string) => void;
   onTogglePlay: () => void;
   onJumpBack: () => void;
   onJumpForward: () => void;
-  onJumpToLive: () => void;
   onShowTracks: () => void;
   onShowEpisodes?: () => void;
   onShowSeasons?: () => void;
@@ -58,13 +69,13 @@ type PlayerControlsProps = {
     pause: string;
     jumpBack: string;
     jumpForward: string;
-    jumpLive: string;
     tracks: string;
     episodes: string;
     seasons: string;
     favorite: string;
     unfavorite: string;
     close: string;
+    noInfo: string;
   };
 };
 
@@ -90,7 +101,6 @@ export function PlayerControls({
   onTogglePlay,
   onJumpBack,
   onJumpForward,
-  onJumpToLive,
   onShowTracks,
   onShowEpisodes,
   onShowSeasons,
@@ -98,6 +108,11 @@ export function PlayerControls({
   isFavorite,
   onToggleFavorite,
   labels,
+  liveProgress,
+  liveTimeRange,
+  upNextLabel,
+  upNextItems,
+  onSelectUpcoming,
 }: PlayerControlsProps) {
   const progress = useMemo(() => {
     if (!duration) {
@@ -105,9 +120,12 @@ export function PlayerControls({
     }
     return Math.min(1, Math.max(0, currentTime / duration));
   }, [currentTime, duration]);
+  const upNextRef = useRef<FlatList>(null);
+  const lastUpNextIndexRef = useRef(0);
 
   return (
     <View className="absolute inset-0 justify-between">
+      <View className="absolute inset-0 bg-black/85" />
       <View className="px-10 pt-6 flex-row items-center justify-between">
         <View className="flex-row items-center gap-4 flex-1 min-w-0">
           {artwork ? (
@@ -146,23 +164,57 @@ export function PlayerControls({
             />
           </TVFocusPressable>
           <TVFocusPressable
-            focusKey="player-close"
-            onPress={onBack}
+            focusKey="player-tracks"
+            onPress={onShowTracks}
             unstyled
             className="h-12 w-12 items-center justify-center rounded-full bg-white/10"
             focusClassName="bg-primary"
-            accessibilityLabel={labels.close}
+            accessibilityLabel={labels.tracks}
           >
-            <MaterialIcons name="close" size={24} className="text-white" />
+            <MaterialIcons name="queue-music" size={22} className="text-white" />
           </TVFocusPressable>
+          {onShowEpisodes ? (
+            <TVFocusPressable
+              focusKey="player-episodes"
+              onPress={onShowEpisodes}
+              unstyled
+              className="h-12 w-12 items-center justify-center rounded-full bg-white/10"
+              focusClassName="bg-primary"
+              accessibilityLabel={labels.episodes}
+            >
+              <MaterialIcons name="playlist-play" size={24} className="text-white" />
+            </TVFocusPressable>
+          ) : null}
+          {onShowSeasons ? (
+            <TVFocusPressable
+              focusKey="player-seasons"
+              onPress={onShowSeasons}
+              unstyled
+              className="h-12 w-12 items-center justify-center rounded-full bg-white/10"
+              focusClassName="bg-primary"
+              accessibilityLabel={labels.seasons}
+            >
+              <MaterialIcons name="layers" size={22} className="text-white" />
+            </TVFocusPressable>
+          ) : null}
         </View>
       </View>
 
       <View className="px-10 pb-8 gap-5">
         {isLive ? (
-          <View className="flex-row items-center gap-2">
-            <View className="h-2 w-2 rounded-full bg-primary" />
-            <Text className="text-white text-sm font-semibold">{labels.live}</Text>
+          <View className="gap-3">
+            <View className="flex-row items-center gap-2">
+              <View className="h-2 w-2 rounded-full bg-primary" />
+              <Text className="text-white text-sm font-semibold">{labels.live}</Text>
+            </View>
+            {liveProgress != null ? (
+              <View className="gap-2">
+                <ProgressBar progress={liveProgress} />
+                {liveTimeRange ? (
+                  <Text className="text-white/70 text-xs">{liveTimeRange}</Text>
+                ) : null}
+              </View>
+            ) : null}
           </View>
         ) : (
           <View className="gap-2">
@@ -187,20 +239,22 @@ export function PlayerControls({
               <MaterialIcons name="replay-10" size={26} className="text-white" />
             </TVFocusPressable>
           )}
-          <TVFocusPressable
-            focusKey="player-toggle"
-            onPress={onTogglePlay}
-            unstyled
-            className="h-20 w-20 items-center justify-center rounded-full bg-white/10"
-            focusClassName="bg-primary"
-            accessibilityLabel={isPaused ? labels.play : labels.pause}
-          >
-            <MaterialIcons
-              name={isPaused ? 'play-arrow' : 'pause'}
-              size={36}
-              className="text-white"
-            />
-          </TVFocusPressable>
+          {isLive ? null : (
+            <TVFocusPressable
+              focusKey="player-toggle"
+              onPress={onTogglePlay}
+              unstyled
+              className="h-20 w-20 items-center justify-center rounded-full bg-white/10"
+              focusClassName="bg-primary"
+              accessibilityLabel={isPaused ? labels.play : labels.pause}
+            >
+              <MaterialIcons
+                name={isPaused ? 'play-arrow' : 'pause'}
+                size={36}
+                className="text-white"
+              />
+            </TVFocusPressable>
+          )}
           {isLive ? null : (
             <TVFocusPressable
               focusKey="player-jump-forward"
@@ -215,54 +269,74 @@ export function PlayerControls({
           )}
         </View>
 
-        <View className="flex-row flex-wrap items-center justify-center gap-4">
-          <TVFocusPressable
-            focusKey="player-tracks"
-            onPress={onShowTracks}
-            unstyled
-            className="rounded-full bg-white/10 px-5 py-2"
-            focusClassName="bg-primary"
-            accessibilityLabel={labels.tracks}
-          >
-            <Text className="text-white text-sm font-semibold">{labels.tracks}</Text>
-          </TVFocusPressable>
-          {onShowEpisodes ? (
-            <TVFocusPressable
-              focusKey="player-episodes"
-              onPress={onShowEpisodes}
-              unstyled
-              className="rounded-full bg-white/10 px-5 py-2"
-              focusClassName="bg-primary"
-              accessibilityLabel={labels.episodes}
-            >
-              <Text className="text-white text-sm font-semibold">{labels.episodes}</Text>
-            </TVFocusPressable>
-          ) : null}
-          {onShowSeasons ? (
-            <TVFocusPressable
-              focusKey="player-seasons"
-              onPress={onShowSeasons}
-              unstyled
-              className="rounded-full bg-white/10 px-5 py-2"
-              focusClassName="bg-primary"
-              accessibilityLabel={labels.seasons}
-            >
-              <Text className="text-white text-sm font-semibold">{labels.seasons}</Text>
-            </TVFocusPressable>
-          ) : null}
-          {isLive ? (
-            <TVFocusPressable
-              focusKey="player-live"
-              onPress={onJumpToLive}
-              unstyled
-              className="rounded-full bg-white/10 px-5 py-2"
-              focusClassName="bg-primary"
-              accessibilityLabel={labels.jumpLive}
-            >
-              <Text className="text-white text-sm font-semibold">{labels.jumpLive}</Text>
-            </TVFocusPressable>
-          ) : null}
-        </View>
+        {isLive && upNextItems && upNextItems.length > 0 ? (
+          <View className="gap-3">
+            {upNextLabel ? (
+              <Text className="text-white/70 text-xs uppercase">{upNextLabel}</Text>
+            ) : null}
+            <FlatList
+              ref={upNextRef}
+              data={upNextItems}
+              keyExtractor={(item) => item.id}
+              horizontal
+              contentContainerClassName="gap-4 pr-10"
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item, index }) => (
+                <View className="w-80 rounded-md px-3 py-2 flex-row gap-3 items-center">
+                  {item.image ? (
+                    <TVFocusPressable
+                      focusKey={`player-upnext-${item.id}`}
+                      onPress={() => onSelectUpcoming?.(item.id)}
+                      onFocus={() => {
+                        if (index > lastUpNextIndexRef.current) {
+                          upNextRef.current?.scrollToIndex({
+                            index,
+                            animated: true,
+                            viewPosition: 0,
+                          });
+                        }
+                        lastUpNextIndexRef.current = index;
+                      }}
+                      unstyled
+                      className="group h-20 w-36 rounded-md bg-white/10 overflow-hidden"
+                    >
+                      <Image
+                        source={{ uri: item.image }}
+                        className="h-full w-full"
+                        contentFit="contain"
+                      />
+                      <View
+                        pointerEvents="none"
+                        className="absolute inset-0 rounded-md border-2 border-transparent group-focus:border-primary"
+                      />
+                    </TVFocusPressable>
+                  ) : null}
+                  <View className="flex-1 gap-1">
+                    {item.timeRange || item.durationLabel ? (
+                      <Text className="text-white/60 text-xs" numberOfLines={1}>
+                        {item.timeRange}
+                        {item.timeRange && item.durationLabel ? ' • ' : ''}
+                        {item.durationLabel}
+                      </Text>
+                    ) : null}
+                    <Text
+                      className="text-white text-sm font-semibold max-w-2xl"
+                      numberOfLines={2}
+                    >
+                      {item.title}
+                    </Text>
+                    <Text
+                      className="text-white/60 text-xs max-w-2xl"
+                      numberOfLines={1}
+                    >
+                      {item.description?.trim() ? item.description : labels.noInfo}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            />
+          </View>
+        ) : null}
       </View>
     </View>
   );

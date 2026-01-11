@@ -18,9 +18,20 @@ import { VLCPlayer } from '@/components/ui/VlcPlayer';
 import { useFavoriteStatus } from '@/hooks/useFavoriteStatus';
 import { useLibraryRefreshStore } from '@/hooks/useLibraryRefreshStore';
 import { usePortalStore } from '@/hooks/usePortalStore';
-import { addRecentlyViewed, removeContinueWatching, upsertContinueWatching } from '@/storage/library';
+import {
+  addRecentlyViewed,
+  removeContinueWatching,
+  upsertContinueWatching,
+} from '@/storage/library';
 import { VodSelectionModal } from '@/components/vod/VodSelectionModal';
 import { useSeriesDetails } from '@/components/series/useSeriesDetails';
+import {
+  getEpgListingsForChannels,
+  getLiveItemsByIds,
+  type HomeEpgListing,
+} from '@/storage/catalog';
+import { applyLiveEpg } from '@/components/epg/applyLiveEpg';
+import { getEpgProgress } from '@/components/home/epgTime';
 
 const resolveParam = (value?: string | string[]) => {
   if (Array.isArray(value)) {
@@ -58,6 +69,62 @@ const resolveEpisodeTitle = (
   return fallback;
 };
 
+const parseXmltvTimestamp = (value?: string | null) => {
+  if (!value) {
+    return null;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const match = trimmed.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/);
+  if (!match) {
+    return null;
+  }
+  const [, year, month, day, hour, minute, second] = match;
+  return new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second),
+  ).getTime();
+};
+
+const formatTimeRange = (start: string, end: string) => {
+  const startMs = parseXmltvTimestamp(start);
+  const endMs = parseXmltvTimestamp(end);
+  if (!startMs || !endMs) {
+    return null;
+  }
+  const format = (value: number) => {
+    const date = new Date(value);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+  return `${format(startMs)} - ${format(endMs)}`;
+};
+
+const formatProgramDuration = (start: string, end: string) => {
+  const startMs = parseXmltvTimestamp(start);
+  const endMs = parseXmltvTimestamp(end);
+  if (!startMs || !endMs || endMs <= startMs) {
+    return null;
+  }
+  const minutes = Math.round((endMs - startMs) / 60000);
+  if (minutes <= 0) {
+    return null;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  if (hours > 0) {
+    return remaining > 0 ? `${hours}h${remaining}m` : `${hours}h`;
+  }
+  return `${remaining}m`;
+};
+
 export function PlayerScreen() {
   const { t } = useI18n();
   const router = useRouter();
@@ -89,11 +156,16 @@ export function PlayerScreen() {
   const [seasonPickerVisible, setSeasonPickerVisible] = useState(false);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
   const [returnToEpisodes, setReturnToEpisodes] = useState(false);
+  const [liveEpg, setLiveEpg] = useState<{
+    current: HomeEpgListing | null;
+    upcoming: HomeEpgListing[];
+  }>({ current: null, upcoming: [] });
+  const [liveClock, setLiveClock] = useState(() => Date.now());
 
   const { status, streamUrl, error: sourceError } = usePlayerSource(routeParams, reloadKey);
 
   const sourceKey = `${routeParams.type}-${routeParams.id ?? 'unknown'}-${reloadKey}`;
-  const { playerRef, state, togglePlay, jumpBy, jumpToLive, handleProgress, handleLoad, handlePlaying, handlePaused, handleEnd, handleError, setSelectedAudio, setSelectedText, playerProps } =
+  const { playerRef, state, togglePlay, jumpBy, handleProgress, handleLoad, handlePlaying, handlePaused, handleEnd, handleError, setSelectedAudio, setSelectedText, playerProps } =
     useVlcPlayback({
       sourceKey,
       onProgress: (currentTime, duration) => {
@@ -157,6 +229,7 @@ export function PlayerScreen() {
     lastLibraryUpdateRef.current = 0;
   }, [streamUrl]);
 
+
   const isLive = routeParams.type === 'live';
   const isSeries = routeParams.type === 'series';
 
@@ -184,6 +257,83 @@ export function PlayerScreen() {
   useEffect(() => {
     setSelectedSeasonId(null);
   }, [seriesId]);
+
+  useEffect(() => {
+    if (!isLive) {
+      return;
+    }
+    const timer = setInterval(() => {
+      setLiveClock(Date.now());
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [isLive]);
+
+  useEffect(() => {
+    if (!isLive || !activeProfileId || !routeParams.id) {
+      setLiveEpg({ current: null, upcoming: [] });
+      return;
+    }
+
+    let isCancelled = false;
+    const run = async () => {
+      try {
+        const liveItems = await getLiveItemsByIds(activeProfileId, [routeParams.id]);
+        const fallbackItem = {
+          id: routeParams.id,
+          title: routeParams.name ?? '',
+          image: routeParams.icon ?? null,
+          type: 'live' as const,
+          epgChannelId: null,
+        };
+        const liveItem = liveItems[0] ?? fallbackItem;
+        let resolved = liveItem;
+        if (!resolved.epgChannelId) {
+          const [mapped] = await applyLiveEpg(activeProfileId, [liveItem]);
+          resolved = mapped ?? resolved;
+        }
+        const channelId = resolved.epgChannelId ?? null;
+        if (!channelId) {
+          if (!isCancelled) {
+            setLiveEpg({ current: null, upcoming: [] });
+          }
+          return;
+        }
+        const listings = await getEpgListingsForChannels(activeProfileId, [channelId]);
+        const sorted = listings
+          .slice()
+          .sort((a, b) => (parseXmltvTimestamp(a.start) ?? 0) - (parseXmltvTimestamp(b.start) ?? 0));
+        const now = Date.now();
+        const current =
+          sorted.find((listing) => {
+            const start = parseXmltvTimestamp(listing.start);
+            const end = parseXmltvTimestamp(listing.end);
+            if (!start || !end) {
+              return false;
+            }
+            return start <= now && end >= now;
+          }) ?? null;
+        const upcoming = sorted
+          .filter((listing) => {
+            const start = parseXmltvTimestamp(listing.start);
+            return start != null && start > now;
+          })
+          .slice(0, 8);
+        if (!isCancelled) {
+          setLiveEpg({ current, upcoming });
+        }
+      } catch {
+        if (!isCancelled) {
+          setLiveEpg({ current: null, upcoming: [] });
+        }
+      }
+    };
+
+    run();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeProfileId, isLive, routeParams.icon, routeParams.id, routeParams.name]);
 
   const activeSeasonId = selectedSeasonId ?? routeParams.season ?? seasonOptions[0]?.id ?? null;
   const episodes = useMemo<EpisodeEntry[]>(() => {
@@ -284,13 +434,13 @@ export function PlayerScreen() {
       pause: t('player.actions.pause'),
       jumpBack: t('player.actions.jumpBack'),
       jumpForward: t('player.actions.jumpForward'),
-      jumpLive: t('player.actions.jumpLive'),
       tracks: t('player.actions.tracks'),
       episodes: t('player.actions.episodes'),
       seasons: t('player.actions.seasons'),
       favorite: t('player.actions.favorite'),
       unfavorite: t('player.actions.unfavorite'),
       close: t('common.close'),
+      noInfo: t('player.labels.noInfo'),
     }),
     [t],
   );
@@ -395,8 +545,24 @@ export function PlayerScreen() {
   const subtitle =
     isSeries && currentEpisodeIndex >= 0
       ? episodes[currentEpisodeIndex]?.title ?? null
-      : null;
+      : isLive
+        ? liveEpg.current?.title ?? null
+        : null;
   const artwork = routeParams.icon ?? null;
+  const liveProgress = liveEpg.current
+    ? getEpgProgress(liveEpg.current.start, liveEpg.current.end, liveClock)
+    : null;
+  const liveTimeRange = liveEpg.current
+    ? formatTimeRange(liveEpg.current.start, liveEpg.current.end)
+    : null;
+  const upNextItems = liveEpg.upcoming.map((item) => ({
+    id: `${item.channelId}-${item.start}-${item.end}`,
+    title: item.title,
+    timeRange: formatTimeRange(item.start, item.end),
+    durationLabel: formatProgramDuration(item.start, item.end),
+    image: artwork,
+    description: item.description ?? null,
+  }));
 
   return (
     <View className="flex-1 bg-black">
@@ -429,7 +595,6 @@ export function PlayerScreen() {
             onTogglePlay={togglePlay}
             onJumpBack={() => jumpBy(-10)}
             onJumpForward={() => jumpBy(10)}
-            onJumpToLive={jumpToLive}
             onShowTracks={() => setTracksVisible(true)}
             onShowEpisodes={isSeries ? handleOpenEpisodes : undefined}
             onShowSeasons={isSeries ? handleOpenSeasons : undefined}
@@ -437,6 +602,11 @@ export function PlayerScreen() {
             isFavorite={isFavorite}
             onToggleFavorite={toggleFavorite}
             labels={labels}
+            liveProgress={isLive ? liveProgress : null}
+            liveTimeRange={isLive ? liveTimeRange : null}
+            upNextLabel={isLive ? t('player.labels.upNext') : undefined}
+            upNextItems={isLive ? upNextItems : undefined}
+            onSelectUpcoming={() => {}}
           />
         </TVFocusProvider>
       </View>

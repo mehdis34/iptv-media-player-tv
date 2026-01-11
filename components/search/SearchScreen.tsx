@@ -17,7 +17,8 @@ import type { HomeContentItem } from '@/components/home/types';
 
 type SearchResultEntry =
   | { id: string; type: 'live'; homeItem: HomeContentItem }
-  | { id: string; type: 'vod' | 'series'; homeItem: HomeContentItem; item: VodItem | SeriesItem };
+  | { id: string; type: 'vod' | 'series'; homeItem: HomeContentItem; item: VodItem | SeriesItem }
+  | { id: string; type: 'placeholder' };
 
 export function SearchScreen() {
   const { t } = useI18n();
@@ -74,8 +75,16 @@ export function SearchScreen() {
     [seriesResults, vodResults],
   );
 
-  const liveItems = isSearchActive ? liveResults : suggestedLive;
-  const mediaItems = isSearchActive ? searchedMediaItems : suggestedMediaItems;
+  const defaultLiveItems = useMemo(() => {
+    const withEpg = suggestedLive.filter((item) => item.epgProgress != null);
+    return (withEpg.length > 0 ? withEpg : suggestedLive).slice(0, 12);
+  }, [suggestedLive]);
+  const defaultMediaItems = useMemo(
+    () => suggestedMediaItems.slice(0, 18),
+    [suggestedMediaItems],
+  );
+  const liveItems = isSearchActive ? liveResults : defaultLiveItems;
+  const mediaItems = isSearchActive ? searchedMediaItems : defaultMediaItems;
 
   const resultItems: SearchResultEntry[] = useMemo(
     () => [
@@ -100,6 +109,22 @@ export function SearchScreen() {
   );
 
   const hasResults = resultItems.length > 0;
+  const paddedResults = useMemo(() => {
+    if (!hasResults) {
+      return resultItems;
+    }
+    const columns = 3;
+    const remainder = resultItems.length % columns;
+    if (remainder === 0) {
+      return resultItems;
+    }
+    const padCount = columns - remainder;
+    const placeholders = Array.from({ length: padCount }, (_, index) => ({
+      id: `placeholder-${resultItems.length + index}`,
+      type: 'placeholder' as const,
+    }));
+    return [...resultItems, ...placeholders];
+  }, [hasResults, resultItems]);
 
   useEffect(() => {
     if (previewQuery) {
@@ -253,25 +278,30 @@ export function SearchScreen() {
           </View>
           <View className="flex-1">
             <FlatList
-              data={resultItems}
+              data={paddedResults}
               keyExtractor={(entry) => `${entry.type}-${entry.id}`}
               contentContainerClassName="gap-6 pb-16"
-              renderItem={({ item: entry }) => (
-                <HomeRailCard
-                  item={entry.homeItem}
-                  focusKey={`search-result-${entry.type}-${entry.id}`}
-                  onPress={() => {
-                    if (entry.type === 'live') {
-                      handleLivePress(entry.homeItem);
-                      return;
-                    }
-                    handleMediaPress({ type: entry.type, item: entry.item });
-                  }}
-                  containerClassName="flex-1"
-                  imageClassName="aspect-video w-full"
-                  placeholderIconSize={36}
-                />
-              )}
+              renderItem={({ item: entry }) => {
+                if (entry.type === 'placeholder') {
+                  return <View className="flex-1 h-44" />;
+                }
+                return (
+                  <HomeRailCard
+                    item={entry.homeItem}
+                    focusKey={`search-result-${entry.type}-${entry.id}`}
+                    onPress={() => {
+                      if (entry.type === 'live') {
+                        handleLivePress(entry.homeItem);
+                        return;
+                      }
+                      handleMediaPress({ type: entry.type, item: entry.item });
+                    }}
+                    containerClassName="flex-1"
+                    imageClassName="h-20 w-full"
+                    placeholderIconSize={36}
+                  />
+                );
+              }}
               numColumns={3}
               columnWrapperClassName="gap-6"
               ListEmptyComponent={

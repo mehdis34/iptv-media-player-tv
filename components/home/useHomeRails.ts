@@ -17,7 +17,6 @@ import {
 } from '@/storage/catalog';
 import {
   getContinueWatching,
-  getFavorites,
   getRecentlyViewed,
   type LibraryItem,
 } from '@/storage/library';
@@ -64,6 +63,9 @@ const resolveLibraryItems = async (
   return applyLiveEpg(profileId, resolved);
 };
 
+const removeLiveItems = (items: LibraryItem[]) =>
+  items.filter((item) => item.itemType !== 'live');
+
 export const useHomeRails = () => {
   const [state, setState] = useState<{
     status: 'loading' | 'ready' | 'error';
@@ -94,23 +96,20 @@ export const useHomeRails = () => {
 
     const run = async () => {
       try {
-        const [continueRows, favoriteRows, recentRows, recentVod, recentSeries] =
-          await Promise.all([
-            getContinueWatching(activeProfileId, MAX_CONTENT_ITEMS),
-            getFavorites(activeProfileId, MAX_CONTENT_ITEMS),
-            getRecentlyViewed(activeProfileId, MAX_CONTENT_ITEMS),
-            getRecentVodItems(activeProfileId, MAX_CONTENT_ITEMS),
-            getRecentSeriesItems(activeProfileId, MAX_CONTENT_ITEMS),
-          ]);
+        const [continueRows, recentRows, recentVod, recentSeries] = await Promise.all([
+          getContinueWatching(activeProfileId, MAX_CONTENT_ITEMS),
+          getRecentlyViewed(activeProfileId, MAX_CONTENT_ITEMS),
+          getRecentVodItems(activeProfileId, MAX_CONTENT_ITEMS),
+          getRecentSeriesItems(activeProfileId, MAX_CONTENT_ITEMS),
+        ]);
         const recentLive = await getLiveItemsWithCurrentEpg(
           activeProfileId,
           MAX_CONTENT_ITEMS,
         );
 
-        const [continueItems, favoriteItems, recentItems] = await Promise.all([
-          resolveLibraryItems(activeProfileId, continueRows),
-          resolveLibraryItems(activeProfileId, favoriteRows),
-          resolveLibraryItems(activeProfileId, recentRows),
+        const [continueItems, recentItems] = await Promise.all([
+          resolveLibraryItems(activeProfileId, removeLiveItems(continueRows)),
+          resolveLibraryItems(activeProfileId, removeLiveItems(recentRows)),
         ]);
 
         const recentLiveWithEpg = (await applyLiveEpg(
@@ -124,12 +123,6 @@ export const useHomeRails = () => {
             return {
               ...rail,
               items: continueItems,
-            };
-          }
-          if (rail.id === 'favorites') {
-            return {
-              ...rail,
-              items: favoriteItems,
             };
           }
           if (rail.id === 'recently-viewed') {

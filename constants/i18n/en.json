@@ -276,14 +276,15 @@
     },
     "labels": {
       "live": "Live",
-      "track": "Track"
+      "track": "Track",
+      "upNext": "Up next",
+      "noInfo": "No information"
     },
     "actions": {
       "play": "Play",
       "pause": "Pause",
       "jumpBack": "Back 10s",
       "jumpForward": "Forward 10s",
-      "jumpLive": "Jump to live",
       "tracks": "Audio & subtitles",
       "audio": "Audio",
       "subtitles": "Subtitles",

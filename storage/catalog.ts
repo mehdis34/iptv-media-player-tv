@@ -288,6 +288,7 @@ export type HomeEpgListing = {
   title: string;
   start: string;
   end: string;
+  description?: string | null;
 };
 
 export type EpgChannelRow = {
@@ -1044,10 +1045,11 @@ export const getEpgListingsForChannels = async (
   const rows = await db.getAllAsync<{
     channel_id: string;
     title?: string | null;
+    description?: string | null;
     start: string;
     end: string;
   }>(
-    `SELECT channel_id, title, start, end FROM epg_listings WHERE profile_id = ? AND channel_id IN (${placeholders});`,
+    `SELECT channel_id, title, description, start, end FROM epg_listings WHERE profile_id = ? AND channel_id IN (${placeholders});`,
     [profileId, ...channelIds],
   );
   return rows.map((row) => ({
@@ -1055,6 +1057,7 @@ export const getEpgListingsForChannels = async (
     title: row.title ?? '',
     start: row.start,
     end: row.end,
+    description: row.description ?? null,
   }));
 };
 

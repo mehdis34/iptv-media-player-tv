@@ -30,6 +30,9 @@ type SearchState = {
   suggestedSeries: SeriesItem[];
 };
 
+const hasImage = (item: { image: string | null }) =>
+  Boolean(item.image && item.image.trim().length > 0);
+
 export const useSearchCatalog = (query: string) => {
   const activeProfileId = usePortalStore((store) => store.activeProfileId);
   const catalogVersion = useCatalogRefreshStore((store) => store.version);
@@ -60,18 +63,22 @@ export const useSearchCatalog = (query: string) => {
               getRecentVodItems(activeProfileId, MEDIA_LIMIT),
               getRecentSeriesItems(activeProfileId, MEDIA_LIMIT),
             ]);
-            const suggestedVod = recentVod.map((item) => ({
-              id: item.id,
-              title: item.title,
-              image: item.image,
-              categoryId: null,
-            }));
-            const suggestedSeries = recentSeries.map((item) => ({
-              id: item.id,
-              title: item.title,
-              image: item.image,
-              categoryId: null,
-            }));
+            const suggestedVod = recentVod
+              .map((item) => ({
+                id: item.id,
+                title: item.title,
+                image: item.image,
+                categoryId: null,
+              }))
+              .filter(hasImage);
+            const suggestedSeries = recentSeries
+              .map((item) => ({
+                id: item.id,
+                title: item.title,
+                image: item.image,
+                categoryId: null,
+              }))
+              .filter(hasImage);
             let liveSuggested = await getLiveItemsWithCurrentEpg(
               activeProfileId,
               LIVE_LIMIT,

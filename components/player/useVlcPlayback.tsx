@@ -89,9 +89,6 @@ export const useVlcPlayback = ({
     });
   }, []);
 
-  const jumpToLive = useCallback(() => {
-    playerRef.current?.seek(1);
-  }, []);
 
   const handleProgress: VLCPlayerProps['onProgress'] = useCallback(
     (event) => {
@@ -187,7 +184,6 @@ export const useVlcPlayback = ({
     togglePlay,
     seekTo,
     jumpBy,
-    jumpToLive,
     handleProgress,
     handleLoad,
     handlePlaying,

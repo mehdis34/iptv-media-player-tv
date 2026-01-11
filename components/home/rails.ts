@@ -18,13 +18,6 @@ export const HOME_RAILS: HomeRailConfig[] = [
     seeMoreKind: 'poster',
   },
   {
-    id: 'favorites',
-    titleKey: 'home.rail.favorites',
-    seeMoreLabelKey: 'home.rail.seeMoreFavorites',
-    seeMoreRoute: '/(tabs)/favorites',
-    seeMoreKind: 'poster',
-  },
-  {
     id: 'recently-viewed',
     titleKey: 'home.rail.recentlyViewed',
     seeMoreLabelKey: 'home.rail.seeMoreRecentlyViewed',

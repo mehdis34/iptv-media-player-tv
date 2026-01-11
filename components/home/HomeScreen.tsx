@@ -54,7 +54,7 @@ export function HomeScreen() {
   );
 
   const rails = (loadedRails.length > 0 ? loadedRails : fallbackRails).filter((rail) =>
-    rail.id === 'continue-watching' || rail.id === 'favorites' || rail.id === 'recently-viewed'
+    rail.id === 'continue-watching' || rail.id === 'recently-viewed'
       ? rail.items.length > 0
       : true,
   );
