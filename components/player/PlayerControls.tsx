@@ -46,6 +46,7 @@ type PlayerControlsProps = {
   liveTimeRange?: string | null;
   onAnyFocus?: () => void;
   onAnyPress?: () => void;
+  canPress?: () => boolean;
   upNextLabel?: string;
   upNextItems?: Array<{
     id: string;
@@ -62,7 +63,6 @@ type PlayerControlsProps = {
   onShowTracks: () => void;
   onShowEpisodes?: () => void;
   onShowSeasons?: () => void;
-  onBack: () => void;
   isFavorite: boolean;
   onToggleFavorite: () => void;
   labels: {
@@ -76,7 +76,6 @@ type PlayerControlsProps = {
     seasons: string;
     favorite: string;
     unfavorite: string;
-    close: string;
     noInfo: string;
   };
 };
@@ -107,11 +106,11 @@ export function PlayerControls({
   onShowTracks,
   onShowEpisodes,
   onShowSeasons,
-  onBack,
   isFavorite,
   onToggleFavorite,
   labels,
   onAnyPress,
+  canPress,
   liveProgress,
   liveTimeRange,
   upNextLabel,
@@ -126,6 +125,7 @@ export function PlayerControls({
   }, [currentTime, duration]);
   const upNextRef = useRef<FlatList>(null);
   const lastUpNextIndexRef = useRef(0);
+  const isPressAllowed = () => (canPress ? canPress() : true);
 
   return (
     <View className="absolute inset-0 justify-between">
@@ -156,6 +156,9 @@ export function PlayerControls({
           <TVFocusPressable
             focusKey="player-favorite"
             onPress={() => {
+              if (!isPressAllowed()) {
+                return;
+              }
               onAnyPress?.();
               onToggleFavorite();
             }}
@@ -174,6 +177,9 @@ export function PlayerControls({
           <TVFocusPressable
             focusKey="player-tracks"
             onPress={() => {
+              if (!isPressAllowed()) {
+                return;
+              }
               onAnyPress?.();
               onShowTracks();
             }}
@@ -189,6 +195,9 @@ export function PlayerControls({
             <TVFocusPressable
               focusKey="player-episodes"
               onPress={() => {
+                if (!isPressAllowed()) {
+                  return;
+                }
                 onAnyPress?.();
                 onShowEpisodes();
               }}
@@ -205,6 +214,9 @@ export function PlayerControls({
             <TVFocusPressable
               focusKey="player-seasons"
               onPress={() => {
+                if (!isPressAllowed()) {
+                  return;
+                }
                 onAnyPress?.();
                 onShowSeasons();
               }}
@@ -251,6 +263,9 @@ export function PlayerControls({
             <TVFocusPressable
               focusKey="player-jump-back"
               onPress={() => {
+                if (!isPressAllowed()) {
+                  return;
+                }
                 onAnyPress?.();
                 onJumpBack();
               }}
@@ -267,6 +282,9 @@ export function PlayerControls({
             <TVFocusPressable
               focusKey="player-toggle"
               onPress={() => {
+                if (!isPressAllowed()) {
+                  return;
+                }
                 onAnyPress?.();
                 onTogglePlay();
               }}
@@ -287,6 +305,9 @@ export function PlayerControls({
             <TVFocusPressable
               focusKey="player-jump-forward"
               onPress={() => {
+                if (!isPressAllowed()) {
+                  return;
+                }
                 onAnyPress?.();
                 onJumpForward();
               }}
@@ -319,6 +340,9 @@ export function PlayerControls({
                     <TVFocusPressable
                       focusKey={`player-upnext-${item.id}`}
                       onPress={() => {
+                        if (!isPressAllowed()) {
+                          return;
+                        }
                         onAnyPress?.();
                         onSelectUpcoming?.(item.id);
                       }}
@@ -355,16 +379,10 @@ export function PlayerControls({
                         {item.durationLabel}
                       </Text>
                     ) : null}
-                    <Text
-                      className="text-white text-sm font-semibold max-w-2xl"
-                      numberOfLines={2}
-                    >
+                    <Text className="text-white text-sm font-semibold max-w-2xl" numberOfLines={2}>
                       {item.title}
                     </Text>
-                    <Text
-                      className="text-white/60 text-xs max-w-2xl"
-                      numberOfLines={1}
-                    >
+                    <Text className="text-white/60 text-xs max-w-2xl" numberOfLines={1}>
                       {item.description?.trim() ? item.description : labels.noInfo}
                     </Text>
                   </View>
